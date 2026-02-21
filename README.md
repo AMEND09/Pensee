@@ -1,50 +1,33 @@
-# Welcome to your Expo app 👋
+# Pensée
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A writing improvement platform built in React Native with Expo.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Daily challenges** seeded by date (either a single creative word or a textual excerpt).
+- Each prompt includes three rhetorical devices or distinctive words for incorporation.
+- **10‑minute writing session** with live word count.
+- Built‑in **dictionary** and **thesaurus** lookup available during writing.
+- Post‑session **reflection form** capturing vocabulary used, devices applied, successes, failures, and personal thoughts.
+- **Statistics** modal showing average word count and consistency streak.
+- Entire interface uses **modal dialogs** rather than tabs for a smooth, skeuomorphic experience.
+- Warm color palette and serif typography for a traditional notebook aesthetic.
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+npm install
+npm run web   # or `npm run android` / `npm run ios`
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Open the app and tap "Start Writing". Click on any word or device to see its definition. The dictionary/thesaurus field is available during a session.
 
-## Learn more
+All sections appear as modals that can be dismissed by tapping outside.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Project structure
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+The core screen lives at `app/(tabs)/index.tsx` (tabs layout disabled). Utility modules under `utils/` manage prompts and definitions.
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Feel free to extend prompts, persist stats, or refine the theme to suit your needs.

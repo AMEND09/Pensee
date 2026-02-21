@@ -1,53 +1,76 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
+/** Warm, parchment-inspired palette for Pensée */
 export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+  // Backgrounds (slightly more white)
+  bg: '#faf8f7',
+  cardBg: '#ffffff',
+  inputBg: '#ffffff',
+  headerBg: '#f9f7f5',
+  modalBg: '#ffffff',
+  paperBg: '#ffffff',
+
+  // Text
+  textPrimary: '#3d2b1f',
+  textSecondary: '#7a6055',
+  textMuted: '#a89688',
+  textAccent: '#b8622a',
+  textOnAccent: '#ffffff',
+
+  // Accent
+  accent: '#b8622a',
+  accentDark: '#8f4a1c',
+  accentLight: '#d4875a',
+  accentMuted: '#ede0d4',
+
+  // Borders & Dividers
+  border: '#d0c0af',
+  borderLight: '#e4d8c8',
+  divider: '#ddd0be',
+  blockquoteBorder: '#b8622a',
+
+  // Paper lines
+  paperLine: '#ece5d8',
+
+  // Chips
+  chipBg: '#ece2d8',
+  chipBorder: '#c9b09a',
+  chipText: '#5c3d2e',
+
+  // Utility
+  shadow: 'rgba(61, 43, 31, 0.14)',
+  overlay: 'rgba(25, 12, 3, 0.52)',
+  white: '#ffffff',
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
+/** Serif font family for the skeuomorphic aesthetic */
+export const Font = Platform.select<{
+  serif: string;
+  serifBold: string;
+  serifItalic: string;
+}>({
+  ios: { serif: 'Georgia', serifBold: 'Georgia-Bold', serifItalic: 'Georgia-Italic' },
+  default: { serif: 'serif', serifBold: 'serif', serifItalic: 'serif' },
   web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    serifBold: "Georgia, 'Times New Roman', serif",
+    serifItalic: "Georgia, 'Times New Roman', serif",
   },
-});
+})!;
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+};
+
+export const Radius = {
+  sm: 4,
+  md: 8,
+  lg: 14,
+  xl: 20,
+  pill: 100,
+};
