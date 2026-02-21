@@ -15,6 +15,10 @@ export type Session = {
   good: string;
   bad: string;
   thoughts: string;
+  /** the creative prompt word used during the session */
+  prompt?: string;
+  /** technique words chosen for the prompt */
+  terms?: { id: string; label: string }[];
 };
 
 export type Stats = {
@@ -50,11 +54,11 @@ export async function getSessions(): Promise<Session[]> {
 
 export async function saveSession(session: Omit<Session, 'id'>): Promise<Session> {
   const sessions = await getSessions();
-  const newSession: Session = { ...session, id: Date.now().toString() };
+  // Use a unique ID combining timestamp + random suffix to avoid collisions for same-day sessions
+  const newSession: Session = { ...session, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
 
-  // Replace any existing session for the same day so today's entry is always fresh
-  const without = sessions.filter((s) => s.date !== session.date);
-  await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify([...without, newSession]));
+  // Allow multiple sessions per day — each gets its own record
+  await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify([...sessions, newSession]));
   return newSession;
 }
 

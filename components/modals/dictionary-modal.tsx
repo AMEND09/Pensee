@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { searchEntries, getAllTerms, Entry, OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
+import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { Search, ChevronDown, ChevronUp, X } from 'lucide-react-native';
 
@@ -20,55 +20,6 @@ type Props = {
   initialQuery?: string;
 };
 
-//  Local result card (hardcoded lexicon) 
-function ResultCard({ term, entry }: { term: string; entry: Entry }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <TouchableOpacity
-      style={styles.resultCard}
-      onPress={() => setExpanded((e) => !e)}
-      activeOpacity={0.75}
-    >
-      <View style={styles.resultHeader}>
-        <View style={styles.resultMeta}>
-          <Text style={styles.resultType}>{entry.type}</Text>
-          <Text style={styles.resultTerm}>{term}</Text>
-        </View>
-        {expanded
-          ? <ChevronUp size={16} color={Colors.textMuted} />
-          : <ChevronDown size={16} color={Colors.textMuted} />}
-      </View>
-
-      <Text style={styles.resultDef} numberOfLines={expanded ? undefined : 2}>
-        {entry.definition}
-      </Text>
-
-      {expanded && (
-        <>
-          {!!entry.example && (
-            <View style={styles.exampleBlock}>
-              <Text style={styles.exampleText}>{entry.example}</Text>
-            </View>
-          )}
-
-          {entry.synonyms.length > 0 && (
-            <>
-              <Text style={styles.thesaurusLabel}>Synonyms</Text>
-              <View style={styles.synonymRow}>
-                {entry.synonyms.map((s) => (
-                  <View key={s} style={styles.chip}>
-                    <Text style={styles.chipText}>{s}</Text>
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
-        </>
-      )}
-    </TouchableOpacity>
-  );
-}
 
 //  Online result card (dictionaryapi.dev) 
 function OnlineResultCard({ term, entry }: { term: string; entry: OnlineEntry }) {
@@ -166,23 +117,22 @@ export default function DictionaryModal({ visible, onClose, initialQuery = '' }:
   const [loading, setLoading] = useState(false);
   const [onlineResult, setOnlineResult] = useState<null | { term: string; entry: OnlineEntry }>(null);
 
-  const results = useCallback(() => searchEntries(query), [query])();
-
   React.useEffect(() => {
     let active = true;
-    if (query.trim() !== '' && results.length === 0) {
+    const term = query.trim();
+    if (term !== '') {
       setLoading(true);
-      fetchOnlineDefinition(query.trim()).then((res) => {
+      fetchOnlineDefinition(term).then((res) => {
         if (!active) return;
         setLoading(false);
-        setOnlineResult(res ? { term: query.trim(), entry: res } : null);
+        setOnlineResult(res ? { term, entry: res } : null);
       });
     } else {
       setLoading(false);
       setOnlineResult(null);
     }
     return () => { active = false; };
-  }, [query, results.length]);
+  }, [query]);
 
   React.useEffect(() => {
     if (visible) setQuery(initialQuery);
@@ -226,22 +176,11 @@ export default function DictionaryModal({ visible, onClose, initialQuery = '' }:
           >
             {query.trim() === '' ? (
               <View style={styles.hintView}>
-                <Text style={styles.hintTitle}>Lexicon</Text>
+                <Text style={styles.hintTitle}>Dictionary</Text>
                 <Text style={styles.hintBody}>
-                  Search any word or rhetorical term for its definition, examples, synonyms, and antonyms. Words not in the local lexicon are looked up online automatically.
+                  Search any word or rhetorical term for its definition, examples, synonyms, and antonyms. Results are pulled from the online dictionary API.
                 </Text>
-                <View style={styles.browseRow}>
-                  {getAllTerms().slice(0, 14).map((t) => (
-                    <TouchableOpacity key={t} style={styles.chip} onPress={() => setQuery(t)}>
-                      <Text style={styles.chipText}>{t}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
               </View>
-            ) : results.length > 0 ? (
-              results.map(({ term, entry }) => (
-                <ResultCard key={term} term={term} entry={entry} />
-              ))
             ) : onlineResult ? (
               <OnlineResultCard term={onlineResult.term} entry={onlineResult.entry} />
             ) : loading ? null : (

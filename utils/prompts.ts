@@ -128,3 +128,19 @@ export function getDailyPrompt(date: Date): Prompt {
   const terms = pickTerms(seed);
   return { text: seedPick(creativeWords, seed), terms };
 }
+
+/** Returns a freshly randomised prompt (for the shuffle button). */
+export function getRandomPrompt(): Prompt {
+  const seed = Math.floor(Math.random() * 100_000);
+  const text = creativeWords[Math.floor(Math.random() * creativeWords.length)];
+  const terms = pickTerms(seed);
+  return { text, terms };
+}
+
+/** All creative words — used for the slot-machine preview frames. */
+export { creativeWords };
+
+/** All term labels (rhetorical + vocab) — used for term reel preview frames. */
+export const allTermLabels: string[] = [
+  ...new Set([...rhetoricalTerms, ...vocabTerms]),
+];

@@ -1,26 +1,28 @@
 ﻿import React, { useState } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { saveSession } from '../../utils/storage';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { Term } from '../../utils/prompts';
+import { saveSession } from '../../utils/storage';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   wordCount: number;
   writing: string;
+  /** creative word prompt text for the session */
+  prompt: string;
   terms: Term[];
   /** Called after successfully saving the reflection. */
   onSave?: () => void;
@@ -86,6 +88,7 @@ export default function ReflectionModal({
   onClose,
   wordCount,
   writing,
+  prompt,
   terms,
   onSave,
 }: Props) {
@@ -117,6 +120,8 @@ export default function ReflectionModal({
         good,
         bad,
         thoughts,
+        prompt,
+        terms,
       });
       reset();
       onSave?.();

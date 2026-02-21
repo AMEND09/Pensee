@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { getEntry, OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
+import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 
 type Props = {
@@ -19,21 +19,21 @@ type Props = {
 };
 
 export default function TermDetailModal({ term, visible, onClose }: Props) {
-  const entry = term ? getEntry(term) : null;
   const [onlineEntry, setOnlineEntry] = React.useState<OnlineEntry | null>(null);
   const [loadingOnline, setLoadingOnline] = React.useState(false);
 
   React.useEffect(() => {
     setOnlineEntry(null);
-    setLoadingOnline(false);
-    if (term && !entry) {
+    if (term) {
       setLoadingOnline(true);
       fetchOnlineDefinition(term).then((res) => {
         setOnlineEntry(res);
         setLoadingOnline(false);
       });
+    } else {
+      setLoadingOnline(false);
     }
-  }, [term, entry]);
+  }, [term]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -42,10 +42,7 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              {entry && <Text style={styles.typeLabel}>{entry.type}</Text>}
-              {!entry && onlineEntry && (
-                <Text style={styles.typeLabel}>{onlineEntry.type}</Text>
-              )}
+              {onlineEntry && <Text style={styles.typeLabel}>{onlineEntry.type}</Text>}
               <Text style={styles.term}>{term}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
@@ -55,83 +52,71 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
 
           <View style={styles.divider} />
 
-          {entry ? (
-            <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Definition */}
-              <Text style={styles.sectionLabel}>DEFINITION</Text>
-              <Text style={styles.definitionText}>{entry.definition}</Text>
+          {(() => {
+            if (loadingOnline) {
+              return (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color={Colors.accent} />
+                </View>
+              );
+            }
+            if (onlineEntry) {
+              return (
+                <ScrollView
+                  style={styles.scroll}
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {/* iterate over every meaning/definition pair */}
+                  {onlineEntry.meanings.map((meaning, mi) => (
+                    <View key={mi} style={styles.meaningBlock}>
+                      <Text style={styles.meaningHeader}>
+                        {meaning.partOfSpeech || 'definition'}
+                      </Text>
+                      {meaning.definitions.map((d, di) => (
+                        <View key={di} style={di > 0 ? styles.defSeparator : undefined}>
+                          <Text style={styles.definitionText}>{`${di + 1}. ${d.definition}`}</Text>
+                          {d.example ? (
+                            <View style={styles.exampleBlock}>
+                              <Text style={styles.exampleLabel}>Example</Text>
+                              <Text style={styles.exampleText}>{d.example}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
 
-              {/* Example */}
-              <View style={styles.exampleBlock}>
-                <Text style={styles.exampleText}>{entry.example}</Text>
-              </View>
-
-              {/* Synonyms */}
-              {entry.synonyms.length > 0 && (
-                <View style={styles.synonymSection}>
-                  <Text style={styles.sectionLabel}>ALSO SEE</Text>
-                  <View style={styles.synonymRow}>
-                    {entry.synonyms.map((s) => (
-                      <View key={s} style={styles.synonymChip}>
-                        <Text style={styles.synonymText}>{s}</Text>
+                  {onlineEntry.synonyms.length > 0 && (
+                    <View style={styles.synonymSection}>
+                      <Text style={styles.sectionLabel}>ALSO SEE</Text>
+                      <View style={styles.synonymRow}>
+                        {onlineEntry.synonyms.map((s) => (
+                          <View key={s} style={styles.synonymChip}>
+                            <Text style={styles.synonymText}>{s}</Text>
+                          </View>
+                        ))}
                       </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-          ) : loadingOnline ? (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color={Colors.accent} />
-            </View>
-          ) : onlineEntry ? (
-            <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.sectionLabel}>DEFINITION</Text>
-              <Text style={styles.definitionText}>{onlineEntry.definition}</Text>
+                    </View>
+                  )}
 
-              {onlineEntry.example ? (
-                <View style={styles.exampleBlock}>
-                  <Text style={styles.exampleText}>{onlineEntry.example}</Text>
-                </View>
-              ) : null}
-
-              {onlineEntry.synonyms.length > 0 && (
-                <View style={styles.synonymSection}>
-                  <Text style={styles.sectionLabel}>ALSO SEE</Text>
-                  <View style={styles.synonymRow}>
-                    {onlineEntry.synonyms.map((s) => (
-                      <View key={s} style={styles.synonymChip}>
-                        <Text style={styles.synonymText}>{s}</Text>
+                  {onlineEntry.antonyms.length > 0 && (
+                    <View style={styles.synonymSection}>
+                      <Text style={[styles.sectionLabel, styles.antonymLabel]}>ANTONYMS</Text>
+                      <View style={styles.synonymRow}>
+                        {onlineEntry.antonyms.map((a) => (
+                          <View key={a} style={[styles.synonymChip, styles.antonymChip]}>
+                            <Text style={[styles.synonymText, styles.antonymChipText]}>{a}</Text>
+                          </View>
+                        ))}
                       </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {onlineEntry.antonyms.length > 0 && (
-                <View style={styles.synonymSection}>
-                  <Text style={[styles.sectionLabel, styles.antonymLabel]}>ANTONYMS</Text>
-                  <View style={styles.synonymRow}>
-                    {onlineEntry.antonyms.map((a) => (
-                      <View key={a} style={[styles.synonymChip, styles.antonymChip]}>
-                        <Text style={[styles.synonymText, styles.antonymChipText]}>{a}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-          ) : (
-            <Text style={styles.notFound}>No entry found for "{term}".</Text>
-          )}
+                    </View>
+                  )}
+                </ScrollView>
+              );
+            }
+            return <Text style={styles.notFound}>No entry found for "{term}".</Text>;
+          })()}
         </Pressable>
       </Pressable>
     </Modal>
@@ -239,8 +224,26 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 22,
   },
+  exampleLabel: {
+    fontFamily: Font.serifBold,
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
   synonymSection: {
     marginTop: Spacing.xs,
+  },
+  meaningBlock: {
+    marginTop: Spacing.md,
+  },
+  meaningHeader: {
+    fontFamily: Font.serifBold,
+    fontSize: 14,
+    marginBottom: Spacing.xs,
+    color: Colors.textPrimary,
+  },
+  defSeparator: {
+    marginTop: Spacing.sm,
   },
   synonymRow: {
     flexDirection: 'row',

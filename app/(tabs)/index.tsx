@@ -1,19 +1,29 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  Animated,
+  Easing,
   ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getDailyPrompt, Prompt, Term } from '../../utils/prompts';
-import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import WritingSessionModal from '../../components/modals/writing-session-modal';
+import HistoryModal from '../../components/modals/history-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
 import StatsModal from '../../components/modals/stats-modal';
 import TermDetailModal from '../../components/modals/term-detail-modal';
+import WritingSessionModal from '../../components/modals/writing-session-modal';
+import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term } from '../../utils/prompts';
+
+// 
+// Constants
+// 
+
+const WORD_ROW_H = 54;   // height of a single frame in the main-word reel
+const TERM_ROW_H = 32;   // height of a single frame in a technique-term reel (increased for larger chips)
 
 // 
 // Helpers
@@ -28,50 +38,184 @@ function formatDate(d: Date): string {
   });
 }
 
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// small helper that looks up a definition in the local lexicon or, failing that,
+// falls back to the online dictionary.  Used on the prompt card so users
+// immediately see what the word actually means instead of staring at a blank
+// mystery term.
+
+
 // 
-// Home Screen
+// WordReel    vertical slot-machine strip
+// 
+
+type ReelRef = {
+  spin: (frames: string[], duration: number, onDone?: () => void) => void;
+  show: (value: string) => void;
+};
+
+const WordReel = forwardRef<
+  ReelRef,
+  {
+    rowHeight: number;
+    containerStyle?: object;
+    textStyle: object;
+    fades?: boolean;
+    fadeColor?: string;
+  }
+>(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff' }, ref) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const [items, setItems] = useState<string[]>(['']);
+  const animRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    spin(frames: string[], duration: number, onDone?: () => void) {
+      if (animRef.current) animRef.current.stop();
+      setItems(frames);
+      translateY.setValue(0);
+      if (duration === 0) {
+        translateY.setValue(-(frames.length - 1) * rowHeight);
+        onDone?.();
+        return;
+      }
+      const anim = Animated.timing(translateY, {
+        toValue: -(frames.length - 1) * rowHeight,
+        duration,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      });
+      animRef.current = anim;
+      anim.start(({ finished }) => { if (finished) onDone?.(); });
+    },
+    show(value: string) {
+      if (animRef.current) animRef.current.stop();
+      setItems([value]);
+      translateY.setValue(0);
+    },
+  }));
+
+  const fadeH = Math.round(rowHeight * 0.38);
+
+  return (
+    <View style={[{ height: rowHeight, overflow: 'hidden' }, containerStyle]}>
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        {items.map((word, i) => (
+          <View
+            key={i}
+            style={{ height: rowHeight, justifyContent: 'center', alignItems: 'flex-start' }}
+          >
+            <Text style={textStyle} numberOfLines={1}>{word}</Text>
+          </View>
+        ))}
+      </Animated.View>
+
+      {fades && (
+        <>
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: fadeH, backgroundColor: `${fadeColor}cc` }}
+          />
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: fadeH, backgroundColor: `${fadeColor}cc` }}
+          />
+        </>
+      )}
+    </View>
+  );
+});
+
+// 
+// HomeScreen
 // 
 
 export default function HomeScreen() {
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  // Initialise prompt synchronously so WordReels are mounted on first render
+  const [prompt, setPrompt] = useState<Prompt>(() => getDailyPrompt(new Date()));
+  const [isSpinning, setIsSpinning] = useState(false);
   const today = new Date();
 
-  // Modal visibility state
+  // Reel refs
+  const wordReelRef = useRef<ReelRef>(null);
+  const termReelRefs = useRef<(ReelRef | null)[]>([null, null, null]);
+
+  // Snapshot of the prompt that was active when the writing session was opened
+  const [sessionPrompt, setSessionPrompt] = useState<Prompt | null>(null);
+
+  // Modal visibility
   const [showSession, setShowSession] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showTermDetail, setShowTermDetail] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
 
-  // Data passed between writing  reflection
+  // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
 
+  // Show initial prompt in reels (no animation) after first mount
   useEffect(() => {
-    setPrompt(getDailyPrompt(today));
+    wordReelRef.current?.show(prompt.text);
+    prompt.terms.forEach((term, i) => {
+      termReelRefs.current[i]?.show(term.label);
+    });
   }, []);
+
+  const handleShuffle = useCallback(() => {
+    if (isSpinning) return;
+    setIsSpinning(true);
+
+    const newPrompt = getRandomPrompt();
+
+    // Build word reel frames: 14 random words then the final word scrolling upward
+    const wordFrames = [...shuffleArr(creativeWords).slice(0, 14), newPrompt.text];
+
+    wordReelRef.current?.spin(wordFrames, 1700, () => {
+      // Cascade the 3 term reels one after another
+      let completed = 0;
+      newPrompt.terms.forEach((term, i) => {
+        const termFrames = [...shuffleArr(allTermLabels).slice(0, 10), term.label];
+        setTimeout(() => {
+          termReelRefs.current[i]?.spin(termFrames, 950, () => {
+            completed++;
+            if (completed === 3) {
+              setPrompt(newPrompt);
+              setIsSpinning(false);
+            }
+          });
+        }, i * 300);
+      });
+    });
+  }, [isSpinning]);
 
   const openTermDetail = useCallback((term: Term) => {
     setSelectedTerm(term);
     setShowTermDetail(true);
   }, []);
 
+  const handleBeginSession = useCallback(() => {
+    setSessionPrompt(prompt);
+    setShowSession(true);
+  }, [prompt]);
+
   const handleSessionComplete = useCallback(
     (writing: string, wordCount: number) => {
       setSessionWriting(writing);
       setSessionWordCount(wordCount);
       setShowSession(false);
-      // Brief delay before opening reflection for a smooth transition
       setTimeout(() => setShowReflection(true), 350);
     },
     [],
   );
-
-  const handleReflectionSave = useCallback(() => {
-    // Reflection saves internally; just close  stats are now updated
-  }, []);
-
-  if (!prompt) return null;
 
   return (
     <SafeAreaView style={styles.root}>
@@ -88,32 +232,52 @@ export default function HomeScreen() {
             <Text style={styles.appName}>Pensée</Text>
             <Text style={styles.appDate}>{formatDate(today)}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.statsBtn}
-            onPress={() => setShowStats(true)}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.statsBtnText}>Statistics</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.statsBtn}
+              onPress={() => setShowHistory(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.statsBtnText}>History</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.statsBtn, styles.statsBtnMargin]}
+              onPress={() => setShowStats(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.statsBtnText}>Statistics</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/*  Prompt Card  */}
         <View style={styles.card}>
-          {/* Card header */}
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>Creative Word</Text>
+            <TouchableOpacity
+              style={[styles.shuffleBtn, isSpinning && styles.shuffleBtnDisabled]}
+              onPress={handleShuffle}
+              activeOpacity={0.7}
+              disabled={isSpinning}
+            >
+              <Text style={styles.shuffleBtnText}>{isSpinning ? 'spinning' : '  shuffle'}</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.cardDivider} />
 
-          {/* Prompt word - tap to see definition like the device chips */}
+          {/* Slot-machine word reel */}
           <TouchableOpacity
-            style={styles.wordWrapper}
-            onPress={() => openTermDetail({ id: prompt.text, label: prompt.text })}
-            activeOpacity={0.7}
+            style={styles.wordReelWrapper}
+            onPress={() => !isSpinning && openTermDetail({ id: prompt.text, label: prompt.text })}
+            activeOpacity={isSpinning ? 1 : 0.7}
           >
-            <Text style={styles.wordText}>{prompt.text}</Text>
-            </TouchableOpacity>
+            <WordReel
+              ref={wordReelRef}
+              rowHeight={WORD_ROW_H}
+              textStyle={styles.wordText}
+            />
+          </TouchableOpacity>
         </View>
 
         {/*  Techniques Card  */}
@@ -123,23 +287,22 @@ export default function HomeScreen() {
           </View>
           <View style={styles.cardDivider} />
 
-          <View style={styles.techInstructions}>
-            <Text style={styles.techInstructionsText}>
-              Incorporate at least one of these devices or words in your writing session.
-              Tap any to see its definition.
-            </Text>
-          </View>
 
           <View style={styles.termRow}>
-            {prompt.terms.map((term) => (
+            {prompt.terms.map((term, i) => (
               <TouchableOpacity
-                key={term.id}
+                key={i}
                 style={styles.termChip}
-                onPress={() => openTermDetail(term)}
-                activeOpacity={0.7}
+                onPress={() => !isSpinning && openTermDetail(term)}
+                activeOpacity={isSpinning ? 1 : 0.7}
               >
                 <Text style={styles.termChipI}>i</Text>
-                <Text style={styles.termChipLabel}>{term.label}</Text>
+                <WordReel
+                  ref={(r) => { termReelRefs.current[i] = r; }}
+                  rowHeight={TERM_ROW_H}
+                  containerStyle={styles.termReelContainer}
+                  textStyle={styles.termChipLabel}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -155,7 +318,7 @@ export default function HomeScreen() {
         {/*  CTA  */}
         <TouchableOpacity
           style={styles.ctaButton}
-          onPress={() => setShowSession(true)}
+          onPress={handleBeginSession}
           activeOpacity={0.85}
         >
           <Text style={styles.ctaButtonText}>Begin Today's Challenge</Text>
@@ -169,7 +332,7 @@ export default function HomeScreen() {
       {/*  Modals  */}
       <WritingSessionModal
         visible={showSession}
-        prompt={prompt}
+        prompt={sessionPrompt}
         onClose={() => setShowSession(false)}
         onComplete={handleSessionComplete}
       />
@@ -178,9 +341,10 @@ export default function HomeScreen() {
         visible={showReflection}
         wordCount={sessionWordCount}
         writing={sessionWriting}
-        terms={prompt.terms}
+        prompt={sessionPrompt?.text ?? prompt.text}
+        terms={sessionPrompt?.terms ?? prompt.terms}
         onClose={() => setShowReflection(false)}
-        onSave={handleReflectionSave}
+        onSave={() => {}}
       />
 
       <StatsModal
@@ -188,12 +352,16 @@ export default function HomeScreen() {
         onClose={() => setShowStats(false)}
       />
 
+      <HistoryModal
+        visible={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
+
       <TermDetailModal
         visible={showTermDetail}
         term={selectedTerm?.id ?? null}
         onClose={() => setShowTermDetail(false)}
       />
-
     </SafeAreaView>
   );
 }
@@ -203,19 +371,14 @@ export default function HomeScreen() {
 // 
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
+  root: { flex: 1, backgroundColor: Colors.bg },
+  scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxl,
   },
 
-  //  App Header 
+  //  App Header
   appHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -223,6 +386,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
+  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  statsBtnMargin: { marginLeft: Spacing.md },
   appName: {
     fontFamily: Font.serifBold,
     fontSize: 26,
@@ -251,7 +416,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  //  Card 
+  //  Card
   card: {
     backgroundColor: Colors.cardBg,
     borderRadius: Radius.lg,
@@ -280,17 +445,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: Colors.textMuted,
   },
-  typePill: {
-    backgroundColor: Colors.accentMuted,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-  },
-  typePillText: {
-    fontFamily: Font.serif,
-    fontSize: 11,
-    color: Colors.accent,
-  },
   cardDivider: {
     height: 1,
     backgroundColor: Colors.divider,
@@ -298,57 +452,37 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
 
-  //  Blockquote 
-  blockquoteWrapper: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
+  //  Shuffle
+  shuffleBtn: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    backgroundColor: Colors.accentMuted,
   },
-  blockquote: {
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
-    paddingLeft: Spacing.md,
-    paddingVertical: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  blockquoteText: {
-    fontFamily: Font.serifItalic,
-    fontSize: 18,
-    color: Colors.textPrimary,
-    lineHeight: 30,
-  },
-  attribution: {
+  shuffleBtnDisabled: { opacity: 0.5 },
+  shuffleBtnText: {
     fontFamily: Font.serif,
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: Spacing.sm,
-    paddingLeft: Spacing.md + 3,
+    fontSize: 12,
+    color: Colors.accent,
+    letterSpacing: 0.3,
   },
 
-  //  Word prompt 
-  wordWrapper: {
+  //  Word reel
+  wordReelWrapper: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    alignItems: 'flex-start',
+    paddingBottom: Spacing.md,
   },
   wordText: {
     fontFamily: Font.serifBold,
     fontSize: 38,
     color: Colors.textPrimary,
     letterSpacing: 1,
+    lineHeight: WORD_ROW_H,
   },
 
-  //  Techniques 
-  techInstructions: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  techInstructionsText: {
-    fontFamily: Font.serif,
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    fontStyle: 'italic',
-  },
+  //  Techniques
   termRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -364,40 +498,43 @@ const styles = StyleSheet.create({
     borderColor: Colors.chipBorder,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    paddingVertical: 5,
     gap: 5,
+    height: TERM_ROW_H + 12,
+    overflow: 'hidden',
   },
   termChipI: {
     fontFamily: Font.serifItalic,
     fontSize: 12,
     color: Colors.accent,
     fontStyle: 'italic',
+    lineHeight: TERM_ROW_H,
   },
   termChipLabel: {
     fontFamily: Font.serif,
-    fontSize: 14,
+    fontSize: 16,
     color: Colors.chipText,
+    lineHeight: TERM_ROW_H,
+  },
+  termReelContainer: {
+    minWidth: 80,
   },
 
-  //  Encouragement 
+  //  Encouragement
   encouragementRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: Spacing.xl,
     gap: Spacing.md,
   },
-  encouragementLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.divider,
-  },
+  encouragementLine: { flex: 1, height: 1, backgroundColor: Colors.divider },
   encouragementText: {
     fontFamily: Font.serifItalic,
     fontSize: 13,
     color: Colors.textMuted,
   },
 
-  //  CTA 
+  //  CTA
   ctaButton: {
     backgroundColor: Colors.accent,
     borderRadius: Radius.md,
