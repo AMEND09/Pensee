@@ -38,6 +38,14 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      "expo-speech-recognition",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Embellish to access your photos so you can scan handwritten text.",
+          "cameraPermission": "Allow Embellish to use your camera to scan handwritten text."
+        }
       ]
     ],
     "experiments": {

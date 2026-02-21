@@ -15,6 +15,8 @@ export type Session = {
   good: string;
   bad: string;
   thoughts: string;
+  /** URI or base64 of any scanned image captured during the session */
+  image?: string;
   /** the creative prompt word used during the session */
   prompt?: string;
   /** technique words chosen for the prompt */

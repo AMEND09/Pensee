@@ -161,6 +161,7 @@ export default function HomeScreen() {
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
+  const [sessionImage, setSessionImage] = useState<string | undefined>(undefined);
 
   // Show initial prompt in reels (no animation) after first mount
   useEffect(() => {
@@ -208,9 +209,10 @@ export default function HomeScreen() {
   }, [prompt]);
 
   const handleSessionComplete = useCallback(
-    (writing: string, wordCount: number) => {
+    (writing: string, wordCount: number, scanImage?: string) => {
       setSessionWriting(writing);
       setSessionWordCount(wordCount);
+      setSessionImage(scanImage);
       setShowSession(false);
       setTimeout(() => setShowReflection(true), 350);
     },
@@ -343,6 +345,7 @@ export default function HomeScreen() {
         writing={sessionWriting}
         prompt={sessionPrompt?.text ?? prompt.text}
         terms={sessionPrompt?.terms ?? prompt.terms}
+        image={sessionImage}
         onClose={() => setShowReflection(false)}
         onSave={() => {}}
       />

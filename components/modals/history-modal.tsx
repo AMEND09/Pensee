@@ -1,15 +1,15 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Session } from '../../utils/storage';
@@ -173,15 +173,6 @@ function TimelineRow({ item, onPress }: { item: FlatItem; onPress: () => void })
           </Text>
         ) : (
           <Text style={styles.promptMuted}></Text>
-        )}
-        {session.terms && session.terms.length > 0 && (
-          <View style={styles.chipRow}>
-            {session.terms.slice(0, 3).map((t) => (
-              <View key={t.id} style={styles.chip}>
-                <Text style={styles.chipLabel}>{t.label}</Text>
-              </View>
-            ))}
-          </View>
         )}
         <Text style={styles.wordCount}>{session.wordCount} words</Text>
       </View>
@@ -693,6 +684,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: 48,
     marginBottom: Spacing.md,
+  },
+  detailImage: {
+    width: '100%',
+    height: 200,
+    marginBottom: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: '#f0f0f0',
   },
   detailChips: {
     flexDirection: 'row',

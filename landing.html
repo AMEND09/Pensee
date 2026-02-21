@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pensée — The Art of Thought</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --paper:       #faf8f7;
+      --card:        #ffffff;
+      --ink:         #3d2b1f;
+      --ink-mid:     #7a6055;
+      --ink-muted:   #a89688;
+      --rust:        #b8622a;
+      --rust-dark:   #8f4a1c;
+      --rust-muted:  #ede0d4;
+      --border:      #d0c0af;
+      --border-lt:   #e4d8c8;
+      --divider:     #ddd0be;
+      --chip-bg:     #ece2d8;
+      --chip-border: #c9b09a;
+      --chip-text:   #5c3d2e;
+      --shadow:      rgba(61,43,31,0.11);
+      --dark:        #2c1d14;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
+
+    /* Noise */
+    .noise {
+      position: fixed; inset: 0; pointer-events: none; z-index: 100; opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Blobs */
+    .blob {
+      position: absolute; border-radius: 50%; filter: blur(72px);
+      mix-blend-mode: multiply; animation: blob-float 22s infinite ease-in-out alternate;
+      pointer-events: none;
+    }
+    @keyframes blob-float {
+      0%   { transform: translate(0,0) scale(1); }
+      33%  { transform: translate(24px,-36px) scale(1.08); border-radius: 60% 40% 35% 65%/55% 35% 65% 45%; }
+      66%  { transform: translate(-18px,22px) scale(0.94); border-radius: 35% 65% 60% 40%/45% 60% 40% 55%; }
+      100% { transform: translate(0,0) scale(1); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--paper); }
+    ::-webkit-scrollbar-thumb { background: var(--rust); border-radius: 3px; }
+
+    /* Cursor blink */
+    .cursor-blink {
+      display: inline-block; width: 1.5px; height: 1em;
+      background: var(--rust); animation: blink 1s step-end infinite; vertical-align: -1px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      padding: 20px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: 0.05em; }
+    .nav-cta {
+      background: var(--rust); color: #fff; border: none;
+      padding: 10px 22px; border-radius: 8px;
+      font-size: 13px; font-weight: 500; letter-spacing: 0.04em;
+      cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .nav-cta:hover { background: var(--rust-dark); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100svh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 100px 24px 80px; position: relative; overflow: hidden;
+    }
+    .hero-eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.38em;
+      text-transform: uppercase; color: var(--rust); margin-bottom: 18px;
+      opacity: 0; transform: translateY(18px);
+    }
+    .hero-h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(52px, 10vw, 108px);
+      line-height: 0.93; padding-bottom: 10px; color: var(--ink);
+      opacity: 0; transform: translateY(28px);
+    }
+    .hero-h1 em { font-style: italic; color: var(--rust); }
+    .hero-sub {
+      max-width: 360px; margin: 26px auto 0;
+      font-size: clamp(15px, 2vw, 18px); font-weight: 300; line-height: 1.7;
+      color: var(--ink-mid); opacity: 0; transform: translateY(18px);
+    }
+    .hero-btn-wrap { margin-top: 44px; opacity: 0; }
+    .hero-btn {
+      display: inline-block;
+      background: var(--rust); color: #fff;
+      padding: 16px 36px; border-radius: 50px;
+      font-size: 15px; font-weight: 500; text-decoration: none; letter-spacing: 0.03em;
+      box-shadow: 0 8px 28px rgba(184,98,42,0.32);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .hero-btn:hover { background: var(--rust-dark); transform: translateY(-2px); }
+    .hero-scroll {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-muted);
+      opacity: 0; animation: fadein 1s 2.4s forwards;
+    }
+    @keyframes fadein { to { opacity: 1; } }
+    .scroll-line {
+      width: 1px; height: 32px;
+      background: linear-gradient(to bottom, transparent, var(--rust));
+      animation: dropanim 1.6s 2.4s ease-in-out infinite;
+    }
+    @keyframes dropanim {
+      0%,100% { transform: scaleY(1); opacity: 1; }
+      50%      { transform: scaleY(0.55) translateY(6px); opacity: 0.4; }
+    }
+
+    /* ── DEFINITION ── */
+    .def-sec {
+      padding: 96px 24px;
+      border-top: 1px solid var(--border-lt);
+      background: rgba(255,255,255,0.4); backdrop-filter: blur(8px);
+    }
+    .def-inner {
+      max-width: 1060px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center;
+    }
+    @media (max-width: 760px) { .def-inner { grid-template-columns: 1fr; gap: 52px; } }
+    .def-h2 { font-family: 'Playfair Display', serif; font-size: clamp(30px, 5vw, 48px); margin-bottom: 32px; }
+    .def-pos { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: var(--rust); }
+    .def-body { font-size: clamp(16px, 2.2vw, 21px); font-weight: 300; margin-top: 8px; line-height: 1.55; }
+    .def-rule { height: 1px; background: var(--border-lt); margin: 26px 0; }
+    .def-aside { font-size: 13px; color: var(--ink-muted); line-height: 1.85; max-width: 360px; margin-top: 32px; }
+
+    /* Prompt card tilt */
+    .prompt-card {
+      background: var(--card);
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      padding: 32px 28px;
+      box-shadow: 0 12px 40px var(--shadow);
+      transform: rotate(1.5deg);
+      transition: transform 0.5s;
+      max-width: 340px; margin: 0 auto;
+    }
+    .prompt-card:hover { transform: rotate(0deg); }
+    .pc-label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); font-weight: 500; margin-bottom: 8px; }
+    .pc-divider { height: 1px; background: var(--divider); margin-bottom: 14px; }
+    .pc-word { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 700; color: var(--ink); margin-bottom: 18px; }
+    .pc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .pc-chip {
+      background: var(--chip-bg); border: 1px solid var(--chip-border);
+      border-radius: 100px; padding: 5px 14px;
+      font-family: 'Playfair Display', serif; font-size: 13px; color: var(--chip-text);
+    }
+    .pc-cta {
+      width: 100%; background: var(--rust); color: #fff; border: none;
+      padding: 14px 0; border-radius: 8px; font-size: 14px; font-weight: 500;
+      letter-spacing: 0.03em; cursor: pointer; font-family: 'Playfair Display', serif;
+    }
+
+    /* ── RITUAL HORIZONTAL SCROLL ── */
+    .ritual-pin {
+      height: 100vh;
+      display: flex; flex-direction: column; justify-content: center;
+      overflow: hidden; background: var(--dark); color: #f9f5f1;
+      position: relative;
+    }
+    .ritual-bar {
+      position: absolute; top: 0; left: 0; height: 2px;
+      background: var(--rust); z-index: 30; width: 0; pointer-events: none;
+    }
+    .ritual-track {
+      display: flex; flex-wrap: nowrap; align-items: center;
+      padding: 0 10vw; gap: 56px; will-change: transform;
+    }
+    .ritual-intro { flex-shrink: 0; width: 38vw; max-width: 500px; }
+    .ritual-eye { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--rust); margin-bottom: 14px; }
+    .ritual-h2 { font-family: 'Playfair Display', serif; font-size: clamp(34px, 5vw, 68px); line-height: 1.05; }
+    .ritual-h2 em { font-style: italic; color: var(--rust); }
+    .ritual-hint { margin-top: 22px; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(249,245,241,0.3); animation: hint-pulse 2s infinite; }
+    @keyframes hint-pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.75; } }
+    .step {
+      flex-shrink: 0; width: 400px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 36px 32px;
+    }
+    .step-num { font-family: 'Playfair Display', serif; font-size: 70px; font-style: italic; color: var(--rust); opacity: 0.4; line-height: 1; margin-bottom: 20px; }
+    .step-h3 { font-family: 'Playfair Display', serif; font-size: 26px; margin-bottom: 14px; font-weight: 600; }
+    .step-p { font-size: 15px; line-height: 1.78; color: rgba(249,245,241,0.58); }
+    /* Mobile: keep horizontal behavior with narrower cards */
+    @media (max-width: 780px) {
+      .ritual-pin { height: 100svh; }
+      .ritual-track { padding: 0 6vw; gap: 24px; }
+      .ritual-intro { width: 78vw; max-width: none; }
+      .ritual-h2 { font-size: clamp(28px, 9vw, 44px); }
+      .step { width: min(84vw, 360px); padding: 28px 24px; }
+      .step-num { font-size: 58px; }
+      .step-h3 { font-size: 22px; }
+      .step-p { font-size: 14px; }
+    }
+
+    /* ── DEMO (scroll-driven sticky) ── */
+    .demo-scroll {
+      position: relative; background: var(--paper);
+      border-top: 1px solid var(--border-lt);
+      min-height: 280vh;
+    }
+    .demo-sticky {
+      position: sticky; top: 0; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      gap: 80px; overflow: hidden;
+      padding: 0 40px;
+    }
+    /* context panels stack on top of each other */
+    .demo-ctx-wrap { width: 340px; min-height: 440px; position: relative; flex-shrink: 0; }
+    .demo-ctx {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      left: 0; width: 100%;
+    }
+    .demo-ctx.ctx-initial { position: absolute; top: 50%; transform: translateY(-50%); }
+    .demo-eye { font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--rust); margin-bottom: 12px; font-weight: 600; }
+    .demo-h2 { font-family: 'Playfair Display', serif; font-size: clamp(26px, 3vw, 42px); line-height: 1.15; margin-bottom: 16px; }
+    .demo-p { font-size: 15px; line-height: 1.78; color: var(--ink-mid); }
+    .demo-feats { list-style: none; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .demo-feat { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--ink-mid); }
+    .feat-ico { flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px; color: var(--rust); }
+    /* dots indicator */
+    .demo-dots { display: flex; gap: 7px; margin-top: 32px; }
+    .demo-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); transition: background 0.3s, transform 0.3s;
+    }
+    .demo-dot.active { background: var(--rust); transform: scale(1.3); }
+    /* mobile: keep scroll animation, stack text + phone */
+    @media (max-width: 860px) {
+      .demo-sticky {
+        flex-direction: column;
+        gap: 18px;
+        padding: 16px;
+      }
+      .demo-ctx-wrap {
+        width: min(92vw, 360px);
+        min-height: 440px;
+      }
+      .demo-h2 { font-size: clamp(24px, 8vw, 34px); }
+      .demo-p { font-size: 14px; line-height: 1.65; }
+      .demo-feats { margin-top: 14px; gap: 8px; }
+      .demo-feat { font-size: 12px; }
+      .demo-dots { margin-top: 18px; }
+    }
+
+    /* ── Phone frame ── */
+    .phone {
+      width: 280px; height: 470px;
+      background: #faf8f7; border-radius: 34px;
+      border: 9px solid #1e130d;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.07) inset, 0 28px 72px rgba(30,19,13,0.38), 0 4px 14px rgba(30,19,13,0.22);
+      overflow: hidden; position: relative; flex-shrink: 0;
+    }
+    /* notch hidden */
+    .phone-island { display: none; }
+    .app-screen {
+      position: absolute; inset: 0; background: #faf8f7;
+      overflow: hidden; transition: opacity 0.4s ease;
+    }
+    .app-screen.hidden { opacity: 0; pointer-events: none; }
+    .app-inner {
+      padding: 40px 14px 14px; height: 100%; overflow-y: auto; scrollbar-width: none;
+    }
+    .app-inner::-webkit-scrollbar { display: none; }
+
+    /* Home screen atoms */
+    .a-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .a-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 19px; color: #3d2b1f; letter-spacing: 0.08em; }
+    .a-date { font-size: 8px; color: #a89688; margin-top: 2px; }
+    .a-hbtns { display: flex; gap: 5px; }
+    .a-hbtn { border: 1px solid #d0c0af; border-radius: 5px; padding: 3px 7px; font-size: 8px; color: #7a6055; background: #fff; font-family: Georgia, serif; }
+    .a-card { background: #fff; border: 1px solid #d0c0af; border-radius: 11px; overflow: hidden; box-shadow: 0 2px 7px rgba(61,43,31,0.08); margin-bottom: 9px; }
+    .a-card-hdr { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px 6px; }
+    .a-clabel { font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #a89688; font-family: Georgia, serif; }
+    .a-shuffle { font-size: 7.5px; color: #b8622a; border: 1px solid #d0c0af; border-radius: 100px; padding: 2px 7px; background: #ede0d4; font-family: Georgia, serif; }
+    .a-cdiv { height: 1px; background: #ddd0be; margin: 0 13px; }
+    .a-word { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 28px; color: #3d2b1f; padding: 10px 13px 11px; }
+    .a-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 9px 13px 13px; }
+    .a-chip { background: #ece2d8; border: 1px solid #c9b09a; border-radius: 100px; padding: 3px 10px; font-size: 10px; color: #5c3d2e; font-family: Georgia, serif; }
+    .a-enc { display: flex; align-items: center; gap: 7px; margin: 12px 0; }
+    .a-enc-line { flex: 1; height: 1px; background: #ddd0be; }
+    .a-enc-text { font-size: 8.5px; color: #a89688; white-space: nowrap; font-style: italic; font-family: Georgia, serif; }
+    .a-cta { background: #b8622a; color: #fff; border: none; width: 100%; padding: 11px 0; border-radius: 7px; font-size: 11px; font-family: Georgia, serif; letter-spacing: 0.02em; }
+    .a-hint { font-size: 7px; color: #a89688; text-align: center; margin-top: 5px; font-style: italic; font-family: Georgia, serif; line-height: 1.5; }
+
+    /* Writing session atoms */
+    .ws-hdr { background: #f5f0eb; padding: 40px 13px 7px; display: flex; justify-content: space-between; align-items: center; }
+    .ws-done { background: #b8622a; color: #fff; border: none; border-radius: 6px; padding: 4px 11px; font-size: 9px; font-family: Georgia, serif; }
+    .ws-timer { font-family: Georgia, serif; font-size: 20px; color: #b8622a; letter-spacing: 0.06em; }
+    .ws-icons { display: flex; gap: 5px; }
+    .ws-ico { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #8a6f5e; }
+    .ws-hline { height: 1px; background: #e8e2d9; }
+    .ws-strip { background: #f5f0eb; padding: 7px 13px; display: flex; align-items: center; gap: 9px; overflow: hidden; }
+    .ws-plabel { font-size: 6.5px; letter-spacing: 0.13em; text-transform: uppercase; color: #b4a49a; font-family: Georgia, serif; }
+    .ws-pword { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; color: #b8622a; }
+    .ws-svline { width: 1px; height: 16px; background: #e8e2d9; flex-shrink: 0; }
+    .ws-schips { display: flex; gap: 4px; overflow: hidden; }
+    .ws-schip { background: #f0ebe6; border: 1px solid #d4c4b8; border-radius: 100px; padding: 2px 7px; font-size: 7.5px; color: #5a3d2b; white-space: nowrap; font-family: Georgia, serif; }
+    .ws-wcount { background: #f5f0eb; padding: 2px 13px; display: flex; justify-content: flex-end; }
+    .ws-wct { font-size: 7px; color: #b4a49a; font-family: Georgia, serif; }
+    .ws-editor {
+      background: #fff; padding: 9px 16px 9px 44px; position: relative; overflow: hidden;
+      font-family: Georgia, serif; font-size: 11px; color: #2c1810;
+      line-height: 20px; height: 260px;
+    }
+    .ws-editor::before { content: ''; position: absolute; top: 0; bottom: 0; left: 36px; width: 1px; background: rgba(185,100,80,0.18); }
+    .ws-lines {
+      background-image: repeating-linear-gradient(to bottom, transparent, transparent 19px, #e8e2d9 19px, #e8e2d9 20px);
+      padding-top: 1px; line-height: 20px; position: relative; z-index: 1;
+    }
+    .ws-hl { background: #e8e0d5; border-radius: 2px; padding: 0 2px; }
+
+    /* Reflection atoms */
+    .rf-handle { width: 30px; height: 3px; background: #d0c0af; border-radius: 2px; margin: 9px auto 0; }
+    .rf-hdr { padding: 9px 14px 7px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .rf-eye { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: #a89688; margin-bottom: 2px; font-family: Georgia, serif; }
+    .rf-title { font-family: 'Playfair Display', serif; font-size: 17px; color: #3d2b1f; }
+    .rf-dismiss { font-size: 9px; color: #a89688; font-family: Georgia, serif; margin-top: 3px; }
+    .rf-divider { height: 1px; background: #ddd0be; margin: 0 14px 9px; }
+    .rf-badges { display: flex; gap: 6px; padding: 0 14px 9px; }
+    .rf-badge { flex: 1; background: #f5f0eb; border: 1px solid #e8e2d9; border-radius: 7px; padding: 7px 9px; }
+    .rf-bval { font-family: 'Playfair Display', serif; font-size: 20px; color: #3d2b1f; font-weight: 700; }
+    .rf-blbl { font-size: 7px; color: #a89688; margin-top: 1px; font-family: Georgia, serif; }
+    .rf-fields { padding: 2px 14px 0; display: flex; flex-direction: column; gap: 8px; }
+    .rf-flabel { font-size: 7px; letter-spacing: 0.14em; text-transform: uppercase; color: #a89688; margin-bottom: 3px; font-family: Georgia, serif; }
+    .rf-finput { background: #fff; border: 1px solid #d0c0af; border-radius: 6px; padding: 6px 9px; font-size: 9px; color: #a89688; font-family: Georgia, serif; font-style: italic; line-height: 1.5; }
+    .rf-save { margin: 10px 14px 0; background: #b8622a; color: #fff; border: none; width: calc(100% - 28px); padding: 9px 0; border-radius: 6px; font-size: 10px; font-family: Georgia, serif; }
+
+    /* ── FEATURES ── */
+    .feat-sec { padding: 96px 24px; background: rgba(255,255,255,0.5); border-top: 1px solid var(--border-lt); }
+    .feat-inner { max-width: 1060px; margin: 0 auto; }
+    .feat-eye { font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--rust); margin-bottom: 12px; font-weight: 600; text-align: center; }
+    .feat-h2 { font-family: 'Playfair Display', serif; font-size: clamp(26px, 4vw, 42px); text-align: center; margin-bottom: 52px; line-height: 1.2; }
+    .feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+    @media (max-width: 780px) { .feat-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 500px) { .feat-grid { grid-template-columns: 1fr; } }
+    .fcard { background: var(--card); border: 1px solid var(--border-lt); border-radius: 14px; padding: 26px 22px; box-shadow: 0 2px 10px var(--shadow); }
+    .fcard-ico { width: 38px; height: 38px; background: var(--rust-muted); border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--rust); }
+    .fcard-h3 { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--ink); margin-bottom: 9px; font-weight: 600; }
+    .fcard-p { font-size: 13px; line-height: 1.72; color: var(--ink-mid); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark); color: #f9f5f1;
+      padding: 96px 24px 48px; text-align: center; position: relative; overflow: hidden;
+    }
+    .footer-h2 { font-family: 'Playfair Display', serif; font-size: clamp(34px, 7vw, 78px); line-height: 1.05; margin-bottom: 14px; }
+    .footer-sub { font-size: 16px; color: rgba(249,245,241,0.45); margin-bottom: 44px; font-weight: 300; }
+    .footer-btn {
+      display: inline-block; background: var(--rust); color: #fff;
+      padding: 16px 40px; border-radius: 50px;
+      font-size: 15px; font-weight: 500; text-decoration: none; letter-spacing: 0.04em;
+      box-shadow: 0 8px 28px rgba(184,98,42,0.34);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .footer-btn:hover { background: var(--rust-dark); transform: translateY(-2px); }
+    .footer-links { margin-top: 60px; display: flex; justify-content: center; gap: 32px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(249,245,241,0.28); }
+    .footer-links a { color: inherit; text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--rust); }
+    .footer-copy { margin-top: 32px; font-size: 11px; color: rgba(249,245,241,0.16); }
+  </style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo serif">Pensée</span>
+  <a href="/" class="nav-cta">Start Writing</a>
+</nav>
+
+<!-- ───────────────── HERO ───────────────── -->
+<header class="hero">
+  <div class="blob" style="width:580px;height:580px;right:-140px;top:-140px;background:#fadac1;opacity:0.46;animation-delay:0s;"></div>
+  <div class="blob" style="width:480px;height:480px;left:-110px;bottom:-90px;background:#ffecd6;opacity:0.52;animation-delay:-8s;"></div>
+
+  <p class="hero-eyebrow" id="h-eye">Est. 2026</p>
+  <h1 class="hero-h1 serif" id="h-h1">The Art of<br><em>Thinking.</em></h1>
+  <p class="hero-sub" id="h-sub">A daily writing ritual.<br>One word. Three techniques. Ten minutes.</p>
+  <div class="hero-btn-wrap" id="h-cta">
+    <a href="/" class="hero-btn">Begin Today's Session</a>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <span>Scroll</span>
+  </div>
+</header>
+
+<!-- ───────────────── DEFINITION ───────────────── -->
+<section class="def-sec" id="about">
+  <div class="def-inner">
+
+    <div class="def-text">
+      <h2 class="def-h2 serif">What is a <em style="font-style:italic;color:var(--rust);">Pensée?</em></h2>
+      <div>
+        <div class="def-pos">1. Literary</div>
+        <div class="def-body">A thought or reflection put into written form; a fragment of an idea captured before it escapes.</div>
+      </div>
+      <div class="def-rule"></div>
+      <div>
+        <div class="def-pos">2. Botanical</div>
+        <div class="def-body">A pansy — the flower of remembrance, whose name in French means "thought."</div>
+      </div>
+      <p class="def-aside">
+        Your mind is a garden. Pensée gives you a single seed each day — an evocative word — along with three rhetorical or vocabulary tools to guide your hand. Ten minutes to tend to what grows.
+      </p>
+    </div>
+
+    <div>
+      <div class="prompt-card" id="prompt-card">
+        <div class="pc-label">Creative Word</div>
+        <div class="pc-divider"></div>
+        <div class="pc-word serif">equanimity</div>
+        <div class="pc-label" style="margin-bottom:8px;">Today's Techniques</div>
+        <div class="pc-divider"></div>
+        <div class="pc-chips">
+          <span class="pc-chip">paradox</span>
+          <span class="pc-chip">allegory</span>
+          <span class="pc-chip">luminous</span>
+        </div>
+        <button class="pc-cta">Begin Today's Challenge</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ───────────────── THE RITUAL (pinned horizontal scroll) ───────────────── -->
+<section id="ritual-pin" class="ritual-pin">
+  <div class="ritual-bar" id="ritual-bar"></div>
+  <div class="ritual-track" id="ritual-track">
+
+    <div class="ritual-intro">
+      <p class="ritual-eye">The Daily Ritual</p>
+      <h2 class="ritual-h2 serif">How to grow<br><em>a writer.</em></h2>
+      <p class="ritual-hint">Scroll &rarr;</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num serif">I</div>
+      <h3 class="step-h3 serif">The Seed</h3>
+      <p class="step-p">Writer's block is decision paralysis. We remove it. Each day you receive one carefully chosen word — your anchor and your invitation.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num serif">II</div>
+      <h3 class="step-h3 serif">The Technique</h3>
+      <p class="step-p">Three rhetorical devices or vocabulary terms accompany every prompt. They aren't rules — they're pathways into language you haven't tried yet.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num serif">III</div>
+      <h3 class="step-h3 serif">The Ten Minutes</h3>
+      <p class="step-p">A timer creates urgency. You aren't writing a novel — you're capturing a thought. When it ends, you reflect and save. Growth is incremental.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ───────────────── APP DEMO ───────────────── -->
+<div class="demo-scroll" id="demo-outer">
+  <div class="demo-sticky" id="demo-sticky">
+
+    <!-- Context panels -->
+    <div class="demo-ctx-wrap">
+
+      <!-- Panel 1: Home -->
+      <div class="demo-ctx ctx-initial" id="ctx-home">
+        <p class="demo-eye">Home Screen</p>
+        <h2 class="demo-h2 serif">Your daily<br>prompt awaits.</h2>
+        <p class="demo-p">One word. Three techniques. A single button to begin. No decisions, no distractions — just open the app and write.</p>
+        <ul class="demo-feats">
+          <li class="demo-feat">
+            <svg class="feat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+            Shuffle for a new word &amp; fresh techniques
+          </li>
+          <li class="demo-feat">
+            <svg class="feat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+            Full session history &amp; statistics
+          </li>
+        </ul>
+        <div class="demo-dots">
+          <div class="demo-dot active" id="dot-0"></div>
+          <div class="demo-dot" id="dot-1"></div>
+          <div class="demo-dot" id="dot-2"></div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Writing -->
+      <div class="demo-ctx" id="ctx-writing" style="opacity:0;">
+        <p class="demo-eye">Writing Session</p>
+        <h2 class="demo-h2 serif">Lined paper.<br>Ten minutes.</h2>
+        <p class="demo-p">The prompt stays visible throughout a 10-minute countdown. The margin line and ruled paper keep it analogue in feel.</p>
+        <ul class="demo-feats">
+          <li class="demo-feat">
+            <svg class="feat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Scan handwritten notes via OCR
+          </li>
+          <li class="demo-feat">
+            <svg class="feat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Open the dictionary without leaving the session
+          </li>
+        </ul>
+        <div class="demo-dots">
+          <div class="demo-dot" id="dot-0b"></div>
+          <div class="demo-dot active" id="dot-1b"></div>
+          <div class="demo-dot" id="dot-2b"></div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Reflection -->
+      <div class="demo-ctx" id="ctx-reflection" style="opacity:0;">
+        <p class="demo-eye">Reflection</p>
+        <h2 class="demo-h2 serif">Think back on<br>what you wrote.</h2>
+        <p class="demo-p">Log which vocabulary and rhetorical devices you used, what worked, and what didn't. Every session is a lesson.</p>
+        <ul class="demo-feats">
+          <li class="demo-feat">
+            <svg class="feat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 15"/></svg>
+            Saved to your session timeline
+          </li>
+          <li class="demo-feat">
+            <svg class="feat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Word count &amp; streak tracking
+          </li>
+        </ul>
+        <div class="demo-dots">
+          <div class="demo-dot" id="dot-0c"></div>
+          <div class="demo-dot" id="dot-1c"></div>
+          <div class="demo-dot active" id="dot-2c"></div>
+        </div>
+      </div>
+
+    </div><!-- /demo-ctx-wrap -->
+
+    <!-- Phone -->
+    <div class="demo-phone">
+      <div class="phone">
+        <div class="phone-island"></div>
+
+        <!-- SCREEN: HOME -->
+        <div class="app-screen" id="screen-home">
+          <div class="app-inner">
+            <!-- Header -->
+            <div class="a-header">
+              <div>
+                <div class="a-name">Pensée</div>
+                <div class="a-date">Saturday, February 21, 2026</div>
+              </div>
+              <div class="a-hbtns">
+                <span class="a-hbtn">History</span>
+                <span class="a-hbtn">Statistics</span>
+              </div>
+            </div>
+
+            <!-- Creative Word card -->
+            <div class="a-card">
+              <div class="a-card-hdr">
+                <span class="a-clabel">Creative Word</span>
+                <span class="a-shuffle">&#10227; shuffle</span>
+              </div>
+              <div class="a-cdiv"></div>
+              <div class="a-word serif">equanimity</div>
+            </div>
+
+            <!-- Techniques card -->
+            <div class="a-card">
+              <div class="a-card-hdr">
+                <span class="a-clabel">Today's Techniques</span>
+              </div>
+              <div class="a-cdiv"></div>
+              <div class="a-chips">
+                <span class="a-chip">paradox</span>
+                <span class="a-chip">allegory</span>
+                <span class="a-chip">luminous</span>
+              </div>
+            </div>
+
+            <!-- Encouragement -->
+            <div class="a-enc">
+              <div class="a-enc-line"></div>
+              <div class="a-enc-text">Ten minutes. Pen to paper.</div>
+              <div class="a-enc-line"></div>
+            </div>
+
+            <!-- CTA -->
+            <button class="a-cta">Begin Today's Challenge</button>
+            <div class="a-hint">A 10-minute timed writing session.<br>The prompt stays visible throughout.</div>
+          </div>
+        </div>
+
+        <!-- SCREEN: WRITING SESSION -->
+        <div class="app-screen hidden" id="screen-writing">
+          <!-- Header -->
+          <div class="ws-hdr">
+            <button class="ws-done">Done</button>
+            <div class="ws-timer">07:24</div>
+            <div class="ws-icons">
+              <div class="ws-ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
+              <div class="ws-ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+              </div>
+              <div class="ws-ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="ws-hline"></div>
+
+          <!-- Prompt strip -->
+          <div class="ws-strip">
+            <div>
+              <div class="ws-plabel">PROMPT</div>
+              <div class="ws-pword">equanimity</div>
+            </div>
+            <div class="ws-svline"></div>
+            <div class="ws-schips">
+              <span class="ws-schip">paradox</span>
+              <span class="ws-schip">allegory</span>
+              <span class="ws-schip">luminous</span>
+            </div>
+          </div>
+          <div class="ws-hline"></div>
+
+          <!-- Word count -->
+          <div class="ws-wcount"><span class="ws-wct">124 words</span></div>
+
+          <!-- Editor -->
+          <div class="ws-editor">
+            <div class="ws-lines">
+              The lake was still — a perfect mirror of the chaotic sky above. A strange <span class="ws-hl">paradox</span>: how could something so violent be reflected with such <span class="ws-hl">luminous</span> calm? I thought of <span class="ws-hl">equanimity</span> not as stillness, but as depth — a willingness to hold contradiction<span class="cursor-blink"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCREEN: REFLECTION -->
+        <div class="app-screen hidden" id="screen-reflection">
+          <div class="rf-handle"></div>
+          <div class="rf-hdr">
+            <div>
+              <div class="rf-eye">Post-Session Reflection</div>
+              <div class="rf-title serif">How did it go?</div>
+            </div>
+            <div class="rf-dismiss">Dismiss</div>
+          </div>
+          <div class="rf-divider"></div>
+          <div class="rf-badges">
+            <div class="rf-badge">
+              <div class="rf-bval serif">124</div>
+              <div class="rf-blbl">words written</div>
+            </div>
+            <div class="rf-badge">
+              <div style="font-size:7px;color:#a89688;margin-bottom:3px;font-family:Georgia,serif;">Today's techniques</div>
+              <div style="font-size:8.5px;color:#5c3d2e;font-family:Georgia,serif;line-height:1.4;">paradox, allegory,<br>luminous</div>
+            </div>
+          </div>
+          <div class="rf-fields">
+            <div>
+              <div class="rf-flabel">Vocabulary used</div>
+              <div class="rf-finput">equanimity, luminous…</div>
+            </div>
+            <div>
+              <div class="rf-flabel">Rhetorical devices used</div>
+              <div class="rf-finput">paradox (stillness vs. chaos)…</div>
+            </div>
+            <div>
+              <div class="rf-flabel">What went well</div>
+              <div class="rf-finput">The opening image felt vivid…</div>
+            </div>
+          </div>
+          <button class="rf-save">Save Reflection</button>
+        </div>
+
+      </div><!-- /phone -->
+    </div><!-- /demo-phone -->
+
+  </div><!-- /demo-sticky -->
+</div><!-- /demo-scroll -->
+
+<!-- ───────────────── FEATURES ───────────────── -->
+<section class="feat-sec" id="features">
+  <div class="feat-inner">
+    <div class="feat-grid">
+
+      <div class="fcard">
+        <div class="fcard-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
+          </svg>
+        </div>
+        <h3 class="fcard-h3 serif">Timed Sessions</h3>
+        <p class="fcard-p">A strict 10-minute countdown that prevents overthinking and turns every session into a focused sprint.</p>
+      </div>
+
+      <div class="fcard">
+        <div class="fcard-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+        </div>
+        <h3 class="fcard-h3 serif">Slot-Machine Shuffle</h3>
+        <p class="fcard-p">Not feeling today's word? Hit shuffle and watch the reels spin to a fresh prompt with new technique words.</p>
+      </div>
+
+      <div class="fcard">
+        <div class="fcard-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </div>
+        <h3 class="fcard-h3 serif">Built-in Dictionary</h3>
+        <p class="fcard-p">Look up any word mid-session. Definitions, examples, synonyms and antonyms — sourced live from the dictionary API.</p>
+      </div>
+
+      <div class="fcard">
+        <div class="fcard-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <h3 class="fcard-h3 serif">Scan Handwriting</h3>
+        <p class="fcard-p">Prefer pen and paper? Photograph your handwriting and OCR converts it into digital text right inside the editor.</p>
+      </div>
+
+      <div class="fcard">
+        <div class="fcard-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
+            <polyline points="12 7 12 12 15 15"/>
+          </svg>
+        </div>
+        <h3 class="fcard-h3 serif">Session Timeline</h3>
+        <p class="fcard-p">Every session is preserved chronologically. Tap any entry to revisit your writing, techniques, and reflections.</p>
+      </div>
+
+      <div class="fcard">
+        <div class="fcard-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+        </div>
+        <h3 class="fcard-h3 serif">Statistics &amp; Streaks</h3>
+        <p class="fcard-p">Track total words written, average session length, current streak, and longest streak to build lasting writing habits.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── FOOTER ───────────────── -->
+<footer>
+  <div class="blob" style="width:880px;height:880px;bottom:-290px;left:-190px;background:#fadac1;opacity:0.07;"></div>
+  <h2 class="footer-h2 serif">Plant the seed.</h2>
+  <p class="footer-sub">Ten minutes a day. That's all it takes.</p>
+  <a href="/" class="footer-btn">Begin Writing — It's Free</a>
+  <div class="footer-links">
+    <a href="#">Twitter</a>
+    <a href="#">Contact</a>
+    <a href="/">Open App</a>
+  </div>
+  <p class="footer-copy">&copy; 2026 Pensée. All rights reserved.</p>
+</footer>
+
+<script>
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* Hero entrance */
+  gsap.to('#h-eye', { opacity:1, y:0, duration:1.2, delay:0.2, ease:'power4.out' });
+  gsap.to('#h-h1',  { opacity:1, y:0, duration:1.4, delay:0.45, ease:'power4.out' });
+  gsap.to('#h-sub', { opacity:1, y:0, duration:1.2, delay:0.75, ease:'power4.out' });
+  gsap.to('#h-cta', { opacity:1, duration:1.2, delay:1.1 });
+
+  /* Scroll reveals */
+  gsap.utils.toArray('.def-text, .prompt-card, .fcard').forEach(el => {
+    gsap.from(el, {
+      opacity:0, y:36, duration:0.85, ease:'power3.out',
+      scrollTrigger: { trigger: el, start:'top 86%', once:true }
+    });
+  });
+
+  /* Horizontal scroll — The Ritual (all viewports) */
+  const ritualTrack = document.getElementById('ritual-track');
+  const ritualBar = document.getElementById('ritual-bar');
+  const ritualDistance = () => Math.max(0, ritualTrack.scrollWidth - window.innerWidth + 120);
+
+  const ritualTween = gsap.to(ritualTrack, {
+    x: () => -ritualDistance(),
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '#ritual-pin',
+      pin: true,
+      scrub: 1,
+      end: () => '+=' + ritualDistance(),
+      invalidateOnRefresh: true,
+      onUpdate: self => { ritualBar.style.width = (self.progress * 100) + '%'; }
+    }
+  });
+
+  /* Fade-in each step card as it enters frame */
+  gsap.utils.toArray('.step').forEach((card) => {
+    gsap.from(card, {
+      opacity: 0,
+      x: 60,
+      duration: 0.7,
+      ease: 'power3.out',
+      scrollTrigger: {
+        trigger: card,
+        containerAnimation: ritualTween,
+        start: 'left 85%',
+        once: true
+      }
+    });
+  });
+
+  /* Prompt card tilt */
+  const pc = document.getElementById('prompt-card');
+  pc.addEventListener('mousemove', e => {
+    const r = pc.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width  - 0.5;
+    const y = (e.clientY - r.top)  / r.height - 0.5;
+    pc.style.transform = `rotate(${1.5 - y*6}deg) perspective(600px) rotateY(${x*6}deg)`;
+  });
+  pc.addEventListener('mouseleave', () => { pc.style.transform = 'rotate(1.5deg)'; });
+
+  /* Scroll-driven phone demo (all viewports) */
+  document.querySelectorAll('.app-screen').forEach((screen) => screen.classList.remove('hidden'));
+  gsap.set('#screen-home', { autoAlpha: 1 });
+  gsap.set(['#screen-writing', '#screen-reflection'], { autoAlpha: 0 });
+  gsap.set('#ctx-home', { autoAlpha: 1, x: 0 });
+  gsap.set(['#ctx-writing', '#ctx-reflection'], { autoAlpha: 0, x: 20 });
+
+  const demoTimeline = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#demo-outer',
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: 0.9,
+      invalidateOnRefresh: true
+    }
+  });
+
+  demoTimeline
+    .to({}, { duration: 1 })
+    .to('#ctx-home', { autoAlpha: 0, x: -20, duration: 0.42, ease: 'power2.in' })
+    .to('#screen-home', { autoAlpha: 0, duration: 0.42, ease: 'power2.in' }, '<')
+    .to('#ctx-writing', { autoAlpha: 1, x: 0, duration: 0.42, ease: 'power2.out' })
+    .to('#screen-writing', { autoAlpha: 1, duration: 0.42, ease: 'power2.out' }, '<')
+    .to({}, { duration: 1 })
+    .to('#ctx-writing', { autoAlpha: 0, x: -20, duration: 0.42, ease: 'power2.in' })
+    .to('#screen-writing', { autoAlpha: 0, duration: 0.42, ease: 'power2.in' }, '<')
+    .to('#ctx-reflection', { autoAlpha: 1, x: 0, duration: 0.42, ease: 'power2.out' })
+    .to('#screen-reflection', { autoAlpha: 1, duration: 0.42, ease: 'power2.out' }, '<')
+    .to({}, { duration: 1 });
+</script>
+</body>
+</html>

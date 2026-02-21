@@ -1,17 +1,22 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { BookOpen, Camera, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
   Alert,
-  Platform,
   KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Spacing } from '../../constants/theme';
+import { Prompt, Term } from '../../utils/prompts';
+import DictionaryModal from './dictionary-modal';
+import TermDetailModal from './term-detail-modal';
 // rich-editor is only required on native platforms
 let RichEditor: any = null;
 let RichToolbar: any = null;
@@ -22,11 +27,10 @@ if (Platform.OS !== 'web') {
   RichToolbar = rich.RichToolbar;
   actions = rich.actions;
 }
-import { Prompt, Term } from '../../utils/prompts';
-import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import DictionaryModal from './dictionary-modal';
-import TermDetailModal from './term-detail-modal';
-import { X, BookOpen } from 'lucide-react-native';
+
+
+// expo-image-picker works on all platforms: native (camera + library) and web (file picker)
+import * as ImagePicker from 'expo-image-picker';
 
 // --- Constants ---
 
@@ -163,7 +167,8 @@ type Props = {
   visible: boolean;
   prompt: Prompt | null;
   onClose: () => void;
-  onComplete: (writing: string, wordCount: number) => void;
+  // scanImage will be provided if the user snapped a photo during the session
+  onComplete: (writing: string, wordCount: number, scanImage?: string) => void;
 };
 
 export default function WritingSessionModal({
@@ -182,6 +187,8 @@ export default function WritingSessionModal({
   const [dictQuery, setDictQuery] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const [showTermDetail, setShowTermDetail] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanImage, setScanImage] = useState<string | undefined>(undefined);
 
   const editorRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -220,6 +227,7 @@ export default function WritingSessionModal({
       setSeconds(SESSION_SECONDS);
       setTimerActive(false);
       setFinished(false);
+      setScanImage(undefined);
       setTimeout(() => editorRef.current?.setContentHTML(''), 150);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -234,8 +242,8 @@ export default function WritingSessionModal({
   const handleComplete = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setTimerActive(false);
-    onComplete(isWeb ? text : html, wordCount);
-  }, [html, text, wordCount, onComplete, isWeb]);
+    onComplete(isWeb ? text : html, wordCount, scanImage);
+  }, [html, text, wordCount, onComplete, isWeb, scanImage]);
 
   const handleDone = () => {
     if (isWeb) {
@@ -284,6 +292,77 @@ export default function WritingSessionModal({
     setShowTermDetail(true);
   };
 
+  // Insert text into whichever editor is active
+  const insertTextIntoEditor = useCallback((insertedText: string) => {
+    if (isWeb) {
+      setText((prev) => (prev ? `${prev}\n${insertedText}` : insertedText));
+    } else {
+      editorRef.current?.insertHTML(insertedText.replace(/\n/g, '<br>'));
+    }
+  }, [isWeb]);
+
+
+  // ── Scan / OCR ─────────────────────────────────────────────────────────────
+  const handleScan = () => {
+    if (isWeb) {
+      // On web: open file picker directly (works on desktop and mobile browsers)
+      launchScan('library');
+    } else {
+      Alert.alert('Scan Handwriting', 'Choose a source for your handwritten text.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Take Photo', onPress: () => launchScan('camera') },
+        { text: 'Choose from Library', onPress: () => launchScan('library') },
+      ]);
+    }
+  };
+
+  const launchScan = async (source: 'camera' | 'library') => {
+    if (source === 'camera' && !isWeb) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow camera access to scan handwriting.');
+        return;
+      }
+    }
+    setScanning(true);
+    try {
+      const opts = { mediaTypes: ['images'] as any, quality: 0.85, base64: true };
+      const result =
+        source === 'camera' && !isWeb
+          ? await ImagePicker.launchCameraAsync(opts)
+          : await ImagePicker.launchImageLibraryAsync(opts);
+
+      if (result.canceled) return;
+
+      const asset = result.assets?.[0];
+      if (!asset) return;
+      // if the user took a photo directly we can store its uri
+      if (source === 'camera' && asset.uri) {
+        setScanImage(asset.uri);
+      }
+      const b64 = (asset.base64 ?? '') as string;
+      const form = new FormData();
+      form.append('apikey', 'K88899267988957'); // OCR.space free-tier key
+      form.append('base64Image', `data:image/jpeg;base64,${b64}`);
+      form.append('language', 'eng');
+      form.append('isOverlayRequired', 'false');
+
+      const res  = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
+      const data = await res.json();
+      const recognized: string = data?.ParsedResults?.[0]?.ParsedText ?? '';
+
+      if (recognized.trim()) {
+        insertTextIntoEditor(recognized.trim());
+      } else {
+        Alert.alert('No text found', 'Could not read text from the image. Try a clearer photo with good lighting.');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to process the image. Please try again.');
+    } finally {
+      setScanning(false);
+    }
+  };
+
   if (!prompt) return null;
 
   const timeColor = seconds < 60 ? '#c0392b' : seconds < 180 ? '#d4660d' : '#b8622a';
@@ -322,6 +401,17 @@ export default function WritingSessionModal({
               </Text>
 
               <View style={styles.headerRight}>
+                {/* Scan handwriting */}
+                <TouchableOpacity
+                  style={[styles.iconBtn, scanning && styles.iconBtnActive]}
+                  onPress={handleScan}
+                  hitSlop={8}
+                  disabled={scanning}
+                >
+                  <Camera size={18} color={scanning ? '#b8622a' : '#8a6f5e'} />
+                </TouchableOpacity>
+
+
                 <TouchableOpacity
                   style={styles.iconBtn}
                   onPress={() => { setDictQuery(''); setShowDict(true); }}
@@ -339,6 +429,7 @@ export default function WritingSessionModal({
 
             {/* Prompt strip */}
             <CompactPromptBar prompt={prompt} onTermPress={openTermDetail} />
+
 
             <View style={styles.divider} />
 
@@ -505,6 +596,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  iconBtnActive: {
+    backgroundColor: 'rgba(184,98,42,0.1)',
+    borderRadius: 6,
+  },
+
 
   // Compact prompt bar
   compactBar: {

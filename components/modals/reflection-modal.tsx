@@ -1,16 +1,17 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { Term } from '../../utils/prompts';
@@ -24,6 +25,8 @@ type Props = {
   /** creative word prompt text for the session */
   prompt: string;
   terms: Term[];
+  /** optional image URI/base64 captured during writing session */
+  image?: string;
   /** Called after successfully saving the reflection. */
   onSave?: () => void;
 };
@@ -90,6 +93,7 @@ export default function ReflectionModal({
   writing,
   prompt,
   terms,
+  image,
   onSave,
 }: Props) {
   const [vocab, setVocab] = useState('');
@@ -99,12 +103,15 @@ export default function ReflectionModal({
   const [thoughts, setThoughts] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [scanImage, setScanImage] = useState<string | undefined>(undefined);
+
   const reset = () => {
     setVocab('');
     setDevices('');
     setGood('');
     setBad('');
     setThoughts('');
+    setScanImage(undefined);
   };
 
   const handleSave = async () => {
@@ -122,6 +129,7 @@ export default function ReflectionModal({
         thoughts,
         prompt,
         terms,
+        image: scanImage,
       });
       reset();
       onSave?.();
@@ -133,8 +141,14 @@ export default function ReflectionModal({
     }
   };
 
+  useEffect(() => {
+    if (visible) {
+      setScanImage(image);
+    }
+  }, [visible, image]);
+
   const handleClose = () => {
-    if (vocab || devices || good || bad || thoughts) {
+    if (vocab || devices || good || bad || thoughts || scanImage) {
       Alert.alert(
         'Discard Reflection?',
         'Your unsaved reflection will be lost.',
@@ -196,6 +210,13 @@ export default function ReflectionModal({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
+              {scanImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: scanImage }} style={styles.imagePreview} resizeMode="contain" />
+                  <Text style={styles.imagePreviewLabel}>Scanned image</Text>
+                </View>
+              ) : null}
+
               <Field
                 label="Vocabulary used"
                 value={vocab}
@@ -370,6 +391,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xxl,
+  },
+  imagePreviewContainer: {
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: Radius.md,
+    backgroundColor: '#f0f0f0',
+    marginBottom: Spacing.sm,
+  },
+  imagePreviewLabel: {
+    fontFamily: Font.serif,
+    fontSize: 10,
+    color: Colors.textMuted,
   },
   sectionDivider: {
     marginVertical: Spacing.md,

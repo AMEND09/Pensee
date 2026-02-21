@@ -1,18 +1,18 @@
-﻿import React, { useState, useCallback } from 'react';
+﻿import { ChevronDown, ChevronUp, Search, X } from 'lucide-react-native';
+import React, { useState } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import { Search, ChevronDown, ChevronUp, X } from 'lucide-react-native';
+import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 
 type Props = {
   visible: boolean;
@@ -50,7 +50,7 @@ function OnlineResultCard({ term, entry }: { term: string; entry: OnlineEntry })
 
             {meaning.definitions.slice(0, isOpen ? undefined : 1).map((d, di) => (
               <View key={di} style={di > 0 ? styles.defSeparator : undefined}>
-                <Text style={styles.resultDef}>{d.definition}</Text>
+                <Text style={styles.resultDef}>{`${di + 1}. ${d.definition}`}</Text>
                 {isOpen && !!d.example && (
                   <View style={styles.exampleBlock}>
                     <Text style={styles.exampleText}>{d.example}</Text>

@@ -1,16 +1,16 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Modal,
-  View,
-  Text,
-  StyleSheet,
   Pressable,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from 'react-native';
-import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 
 type Props = {
   term: string | null;
