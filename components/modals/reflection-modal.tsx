@@ -1,17 +1,17 @@
 ﻿import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { Term } from '../../utils/prompts';
@@ -22,13 +22,15 @@ type Props = {
   onClose: () => void;
   wordCount: number;
   writing: string;
-  /** creative word prompt text for the session */
+  /** quote prompt text for the session */
   prompt: string;
   terms: Term[];
   /** optional image URI/base64 captured during writing session */
   image?: string;
   /** Called after successfully saving the reflection. */
   onSave?: () => void;
+  /** Called when the user taps "Share" to export their writing */
+  onExport?: () => void;
 };
 
 function Field({
@@ -95,6 +97,7 @@ export default function ReflectionModal({
   terms,
   image,
   onSave,
+  onExport,
 }: Props) {
   const [vocab, setVocab] = useState('');
   const [devices, setDevices] = useState('');
@@ -269,6 +272,12 @@ export default function ReflectionModal({
                 </Text>
               </TouchableOpacity>
 
+              {onExport && (
+                <TouchableOpacity style={styles.exportButton} onPress={onExport}>
+                  <Text style={styles.exportButtonText}>Share Writing</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity style={styles.skipButton} onPress={() => { reset(); onClose(); }}>
                 <Text style={styles.skipText}>Skip for now</Text>
               </TouchableOpacity>
@@ -436,6 +445,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textOnAccent,
     letterSpacing: 0.3,
+  },
+  exportButton: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.cardBg,
+  },
+  exportButtonText: {
+    fontFamily: Font.serif,
+    fontSize: 15,
+    color: Colors.accent,
+    letterSpacing: 0.2,
   },
   skipButton: {
     paddingVertical: Spacing.md,

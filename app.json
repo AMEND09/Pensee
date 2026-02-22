@@ -1,15 +1,32 @@
 {
   "expo": {
-    "name": "Embellish",
-    "slug": "Embellish",
+    "name": "Pensée",
+    "slug": "pensee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "embellish",
+    "scheme": "pensee",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "app.pensee.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Pensée needs access to your photo library to save and share your writing exports.",
+        "NSPhotoLibraryAddUsageDescription": "Pensée needs access to save your writing exports to your photo library.",
+        "NSCameraUsageDescription": "Pensée uses your camera so you can photograph handwritten notes and add them to your writing.",
+        "NSMicrophoneUsageDescription": "Pensée uses your microphone so you can dictate text into your writing session.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +36,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "app.pensee.mobile"
     },
     "web": {
       "output": "static",
@@ -43,14 +61,27 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Embellish to access your photos so you can scan handwritten text.",
-          "cameraPermission": "Allow Embellish to use your camera to scan handwritten text."
+          "photosPermission": "Pensée needs access to your photo library to save and share your writing exports.",
+          "cameraPermission": "Pensée uses your camera so you can photograph handwritten notes and add them to your writing."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Pensée needs access to your photo library to save your writing exports.",
+          "savePhotosPermission": "Pensée needs permission to save your writing exports to your photo library.",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "pocketbaseUrl": "https://your-pocketbase-instance.com",
+      "privacyPolicyUrl": "https://pensee.app/privacy",
+      "termsOfServiceUrl": "https://pensee.app/terms"
     }
   }
 }

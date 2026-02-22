@@ -1,5 +1,7 @@
-﻿import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+﻿import { BarChart, History, User as UserIcon } from 'lucide-react-native';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   ScrollView,
@@ -10,19 +12,26 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccountModal from '../../components/modals/account-modal';
+import ExportModal from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
+import QuoteModal from '../../components/modals/quote-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
 import StatsModal from '../../components/modals/stats-modal';
 import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term } from '../../utils/prompts';
 
 // 
 // Constants
 // 
 
-const WORD_ROW_H = 54;   // height of a single frame in the main-word reel
+// height of one line in the main-word reel.  We allow two lines on the
+// home screen, so the row height is double this value (108px) and we pass
+// maxLines=2 when rendering the reel.
+const WORD_ROW_H = 108;
 const TERM_ROW_H = 32;   // height of a single frame in a technique-term reel (increased for larger chips)
 
 // 
@@ -71,13 +80,18 @@ const WordReel = forwardRef<
     fades?: boolean;
     fadeColor?: string;
     /**
+     * Maximum number of text lines per frame (used for wrapping/ellipsis).
+     * Defaults to 1.
+     */
+    maxLines?: number;
+    /**
      * When true the reel will scroll downward instead of upward.  This
      * reverses the animation and also flips the frames so the final value
      * still ends up in view.
      */
     reverse?: boolean;
   }
->(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', reverse = false }, ref) => {
+>(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', maxLines = 1, reverse = false }, ref) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const [items, setItems] = useState<string[]>(['']);
   const animRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -155,14 +169,16 @@ const WordReel = forwardRef<
   const fadeH = Math.round(rowHeight * 0.38);
 
   return (
-    <View style={[{ height: rowHeight, overflow: 'hidden' }, containerStyle]}>
+    <View style={[{ height: rowHeight, overflow: 'hidden', width: '100%' }, containerStyle]}>
       <Animated.View style={{ transform: [{ translateY }] }}>
         {items.map((word, i) => (
           <View
             key={i}
-            style={{ height: rowHeight, justifyContent: 'center', alignItems: 'flex-start' }}
+            style={{ height: rowHeight, justifyContent: 'center', alignItems: 'flex-start', width: '100%' }}
           >
-            <Text style={textStyle} numberOfLines={1}>{word}</Text>
+            <Text style={textStyle} numberOfLines={maxLines} ellipsizeMode="tail">
+              {word}
+            </Text>
           </View>
         ))}
       </Animated.View>
@@ -188,10 +204,21 @@ const WordReel = forwardRef<
 // 
 
 export default function HomeScreen() {
-  // Initialise prompt synchronously so WordReels are mounted on first render
-  const [prompt, setPrompt] = useState<Prompt>(() => getDailyPrompt(new Date()));
+  // prompt may be fetched asynchronously; start null while loading
+  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [loadingPrompt, setLoadingPrompt] = useState(true);
+
+  // grab initial quote on mount
+  useEffect(() => {
+    getDailyPrompt(new Date()).then((p) => {
+      setPrompt(p);
+      setLoadingPrompt(false);
+    });
+  }, []);
+
   const [isSpinning, setIsSpinning] = useState(false);
   const today = new Date();
+  const { user } = useAuth();
 
   // Reel refs
   const wordReelRef = useRef<ReelRef>(null);
@@ -207,27 +234,33 @@ export default function HomeScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const [showTermDetail, setShowTermDetail] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
+  const [showQuote, setShowQuote] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
   const [sessionImage, setSessionImage] = useState<string | undefined>(undefined);
 
-  // Show initial prompt in reels (no animation) after first mount
+  // Show initial prompt in reels once it's loaded from the API
   useEffect(() => {
+    if (!prompt) return;
     wordReelRef.current?.show(prompt.text);
     prompt.terms.forEach((term, i) => {
       termReelRefs.current[i]?.show(term.label);
     });
-  }, []);
+  }, [prompt]);
 
-  const handleShuffle = useCallback(() => {
-    if (isSpinning) return;
+  const handleShuffle = useCallback(async () => {
+    // re-check every value at call time; {
+    if (isSpinning || loadingPrompt || !prompt) return;
     setIsSpinning(true);
 
-    const newPrompt = getRandomPrompt();
+    const newPrompt = await getRandomPrompt();
 
-    // Build word reel frames: 14 random words then the final word scrolling upward
+    // Build word reel frames: 14 random quotes then the final quote
+    // (quotes can be long; we simply show them truncated by Text numberOfLines)
     const wordFrames = [...shuffleArr(creativeWords).slice(0, 14), newPrompt.text];
 
     // All reels (word + terms) will spin at the same time, but we stagger
@@ -266,7 +299,7 @@ export default function HomeScreen() {
       const duration = TERM_BASE + i * TERM_STAGGER;
       termReelRefs.current[i]?.spin(termFrames, duration, onDone);
     });
-  }, [isSpinning]);
+  }, [isSpinning, loadingPrompt, prompt]);
 
   const openTermDetail = useCallback((term: Term) => {
     setSelectedTerm(term);
@@ -310,14 +343,21 @@ export default function HomeScreen() {
               onPress={() => setShowHistory(true)}
               activeOpacity={0.75}
             >
-              <Text style={styles.statsBtnText}>History</Text>
+              <History size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.statsBtn, styles.statsBtnMargin]}
               onPress={() => setShowStats(true)}
               activeOpacity={0.75}
             >
-              <Text style={styles.statsBtnText}>Statistics</Text>
+              <BarChart size={16} color={Colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.statsBtn, styles.statsBtnMargin]}
+              onPress={() => setShowAccount(true)}
+              activeOpacity={0.75}
+            >
+              <UserIcon size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -325,12 +365,12 @@ export default function HomeScreen() {
         {/*  Prompt Card  */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>Creative Word</Text>
+            <Text style={styles.cardLabel}>Quote Prompt</Text>
             <TouchableOpacity
-              style={[styles.shuffleBtn, isSpinning && styles.shuffleBtnDisabled]}
+              style={[styles.shuffleBtn, (isSpinning || loadingPrompt) && styles.shuffleBtnDisabled]}
               onPress={handleShuffle}
               activeOpacity={0.7}
-              disabled={isSpinning}
+              disabled={isSpinning || loadingPrompt}
             >
               <Text style={styles.shuffleBtnText}>{isSpinning ? 'spinning' : '  shuffle'}</Text>
             </TouchableOpacity>
@@ -339,18 +379,28 @@ export default function HomeScreen() {
           <View style={styles.cardDivider} />
 
           {/* Word reel display */}
-          <TouchableOpacity
-            style={styles.wordReelWrapper}
-            onPress={() => !isSpinning && openTermDetail({ id: prompt.text, label: prompt.text })}
-            activeOpacity={isSpinning ? 1 : 0.7}
-          >
-            <WordReel
-              ref={wordReelRef}
-              rowHeight={WORD_ROW_H}
-              textStyle={styles.wordText}
-              reverse
-            />
-          </TouchableOpacity>
+          {loadingPrompt ? (
+            <View style={{ height: WORD_ROW_H, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator />
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.wordReelWrapper}
+              onPress={() => {
+                if (isSpinning || !prompt) return;
+                setShowQuote(true);
+              }}
+              activeOpacity={isSpinning ? 1 : 0.7}
+            >
+              <WordReel
+                ref={wordReelRef}
+                rowHeight={WORD_ROW_H}
+                textStyle={styles.wordText}
+                maxLines={2}
+                reverse
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/*  Techniques Card  */}
@@ -362,7 +412,7 @@ export default function HomeScreen() {
 
 
           <View style={styles.termRow}>
-            {prompt.terms.map((term, i) => (
+            {prompt?.terms?.map((term, i) => (
               <TouchableOpacity
                 key={i}
                 style={styles.termChip}
@@ -399,7 +449,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <Text style={styles.sessionHint}>
-          A 10-minute timed writing session. The prompt stays visible throughout.
+          Write freely for ten minutes using today's creative prompt.
         </Text>
       </ScrollView>
 
@@ -415,11 +465,12 @@ export default function HomeScreen() {
         visible={showReflection}
         wordCount={sessionWordCount}
         writing={sessionWriting}
-        prompt={sessionPrompt?.text ?? prompt.text}
-        terms={sessionPrompt?.terms ?? prompt.terms}
+        prompt={sessionPrompt?.text ?? prompt?.text ?? ''}
+        terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
         image={sessionImage}
         onClose={() => setShowReflection(false)}
         onSave={() => {}}
+        onExport={() => setShowExport(true)}
       />
 
       <StatsModal
@@ -436,6 +487,26 @@ export default function HomeScreen() {
         visible={showTermDetail}
         term={selectedTerm?.id ?? null}
         onClose={() => setShowTermDetail(false)}
+      />
+      <QuoteModal
+        visible={showQuote}
+        quote={prompt?.text ?? ''}
+        author={prompt?.author}
+        onClose={() => setShowQuote(false)}
+      />
+
+      <AccountModal
+        visible={showAccount}
+        onClose={() => setShowAccount(false)}
+      />
+
+      <ExportModal
+        visible={showExport}
+        onClose={() => setShowExport(false)}
+        prompt={sessionPrompt?.text ?? prompt?.text ?? ''}
+        terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
+        writing={sessionWriting}
+        wordCount={sessionWordCount}
       />
     </SafeAreaView>
   );
@@ -460,8 +531,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
-  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   statsBtnMargin: { marginLeft: Spacing.md },
   appName: {
     fontFamily: Font.serifBold,
@@ -554,7 +626,8 @@ const styles = StyleSheet.create({
     fontSize: 38,
     color: Colors.textPrimary,
     letterSpacing: 1,
-    lineHeight: WORD_ROW_H,
+    // allow two lines but keep line height roughly original
+    lineHeight: WORD_ROW_H / 2,
   },
 
   //  Techniques

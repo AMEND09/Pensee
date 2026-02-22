@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import pb from './pocketbase';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -35,7 +36,28 @@ export type Stats = {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SESSIONS_KEY = 'embellish_sessions_v2';
+const SESSIONS_KEY = 'pensee_sessions_v2';
+
+// Map a PocketBase record to a Session
+function pbRecordToSession(record: Record<string, any>): Session {
+  return {
+    id: record['id'] as string,
+    date: (record['date'] as string) ?? '',
+    wordCount: (record['wordCount'] as number) ?? 0,
+    writing: (record['writing'] as string) ?? '',
+    vocab: (record['vocab'] as string) ?? '',
+    devices: (record['devices'] as string) ?? '',
+    good: (record['good'] as string) ?? '',
+    bad: (record['bad'] as string) ?? '',
+    thoughts: (record['thoughts'] as string) ?? '',
+    image: record['image'] as string | undefined,
+    prompt: record['prompt'] as string | undefined,
+    terms: (() => {
+      if (!record['terms']) return undefined;
+      try { return JSON.parse(record['terms'] as string); } catch { return undefined; }
+    })(),
+  };
+}
 
 function toDateString(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -45,7 +67,20 @@ function toDateString(d: Date): string {
 // CRUD
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Read from PocketBase if authenticated, otherwise fall back to AsyncStorage */
 export async function getSessions(): Promise<Session[]> {
+  if (pb.authStore.isValid) {
+    try {
+      const records = await pb.collection('sessions').getFullList({
+        sort: '-date,-created',
+        filter: pb.filter('user = {:userId}', { userId: pb.authStore.record?.id ?? '' }),
+      });
+      return records.map(pbRecordToSession);
+    } catch {
+      // Fall through to local storage if network fails
+    }
+  }
+
   try {
     const raw = await AsyncStorage.getItem(SESSIONS_KEY);
     return raw ? (JSON.parse(raw) as Session[]) : [];
@@ -54,14 +89,46 @@ export async function getSessions(): Promise<Session[]> {
   }
 }
 
+/** Save to PocketBase if authenticated, otherwise save locally */
 export async function saveSession(session: Omit<Session, 'id'>): Promise<Session> {
-  const sessions = await getSessions();
-  // Use a unique ID combining timestamp + random suffix to avoid collisions for same-day sessions
-  const newSession: Session = { ...session, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
+  if (pb.authStore.isValid) {
+    try {
+      const record = await pb.collection('sessions').create({
+        user: pb.authStore.record?.id,
+        date: session.date,
+        wordCount: session.wordCount,
+        writing: session.writing,
+        vocab: session.vocab,
+        devices: session.devices,
+        good: session.good,
+        bad: session.bad,
+        thoughts: session.thoughts,
+        image: session.image,
+        prompt: session.prompt,
+        terms: session.terms ? JSON.stringify(session.terms) : null,
+      });
+      return pbRecordToSession(record);
+    } catch {
+      // Fall through to local storage if network fails
+    }
+  }
 
-  // Allow multiple sessions per day — each gets its own record
+  const sessions = await getLocalSessions();
+  const newSession: Session = {
+    ...session,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  };
   await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify([...sessions, newSession]));
   return newSession;
+}
+
+async function getLocalSessions(): Promise<Session[]> {
+  try {
+    const raw = await AsyncStorage.getItem(SESSIONS_KEY);
+    return raw ? (JSON.parse(raw) as Session[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getSessionByDate(dateStr: string): Promise<Session | null> {

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
-import { rhetoricalExamples } from '../../utils/prompts';
+import { rhetoricalDefinitions, rhetoricalExamples } from '../../utils/prompts';
 
 type Props = {
   term: string | null;
@@ -66,24 +66,39 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
               );
             }
 
-            // if this term has predefined rhetorical examples, render a simple
-            // list rather than the full dictionary layout. Note that
-            // fetchOnlineDefinition already returns a dummy entry, but this
-            // conditional gives us finer control over presentation.
-            if (term && term in rhetoricalExamples) {
-              const examples = rhetoricalExamples[term];
+            // if this term has predefined rhetorical examples or definitions,
+            // render a simple list rather than the full dictionary layout.  we
+            // guard again against the possibility that either map is missing (it
+            // shouldn't be now that both are exported as objects) so the RHS of
+            // `in` is always an object.
+            if (
+              term &&
+              ((rhetoricalExamples && term in rhetoricalExamples) ||
+                (rhetoricalDefinitions && term in rhetoricalDefinitions))
+            ) {
+              const examples = (rhetoricalExamples && rhetoricalExamples[term]) || [];
+              const definition = (rhetoricalDefinitions && rhetoricalDefinitions[term]) || '';
               return (
                 <ScrollView
                   style={styles.scroll}
                   contentContainerStyle={styles.scrollContent}
                   showsVerticalScrollIndicator={false}
                 >
-                  <Text style={styles.meaningHeader}>Examples</Text>
-                  {examples.map((ex, idx) => (
-                    <View key={idx} style={styles.exampleBlock}>
-                      <Text style={styles.exampleText}>{ex}</Text>
+                  {definition && (
+                    <View style={styles.definitionBlock}>
+                      <Text style={styles.definitionText}>{definition}</Text>
                     </View>
-                  ))}
+                  )}
+                  {examples.length > 0 && (
+                    <>
+                      <Text style={styles.meaningHeader}>Examples</Text>
+                      {examples.map((ex, idx) => (
+                        <View key={idx} style={styles.exampleBlock}>
+                          <Text style={styles.exampleText}>{ex}</Text>
+                        </View>
+                      ))}
+                    </>
+                  )}
                 </ScrollView>
               );
             }
@@ -251,8 +266,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     lineHeight: 22,
+  },  definitionBlock: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.cardBg,
+    borderRadius: Radius.sm,
+    marginBottom: Spacing.md,
   },
-  exampleLabel: {
+  definitionText: {
+    fontFamily: Font.serif,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 24,
+  },  exampleLabel: {
     fontFamily: Font.serifBold,
     fontSize: 12,
     color: Colors.textMuted,

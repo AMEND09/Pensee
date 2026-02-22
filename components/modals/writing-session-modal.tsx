@@ -1,21 +1,23 @@
 ﻿import { BookOpen, Camera, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '../../constants/theme';
 import { Prompt, Term } from '../../utils/prompts';
+import ConfirmModal from './confirm-modal';
 import DictionaryModal from './dictionary-modal';
+import QuoteModal from './quote-modal';
 import TermDetailModal from './term-detail-modal';
 // rich-editor is only required on native platforms
 let RichEditor: any = null;
@@ -124,22 +126,30 @@ const TAB_JS = `
 
 function CompactPromptBar({
   prompt,
+  onPromptPress,
   onTermPress,
 }: {
   prompt: Prompt;
+  onPromptPress: () => void;
   onTermPress: (term: Term) => void;
 }) {
   return (
-    <View style={styles.compactBar}>
+    <View style={[styles.compactBar, styles.compactBarColumn]}>   
       <TouchableOpacity
         style={styles.compactWordWrap}
-        onPress={() => onTermPress({ id: prompt.text, label: prompt.text })}
+        onPress={onPromptPress}
         activeOpacity={0.7}
       >
         <Text style={styles.compactLabel}>PROMPT</Text>
-        <Text style={styles.compactWord}>{prompt.text}</Text>
+        <Text
+          style={styles.compactWord}
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {prompt.text}
+        </Text>
       </TouchableOpacity>
-      <View style={styles.compactDivider} />
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -187,6 +197,9 @@ export default function WritingSessionModal({
   const [dictQuery, setDictQuery] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const [showTermDetail, setShowTermDetail] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
 
@@ -255,10 +268,7 @@ export default function WritingSessionModal({
       return;
     }
     if (wordCount === 0) {
-      Alert.alert('Nothing written yet', 'Write something first, or dismiss the session.', [
-        { text: 'Keep writing', style: 'cancel' },
-        { text: 'Dismiss anyway', style: 'destructive', onPress: handleDismiss },
-      ]);
+      setShowEmptyConfirm(true);
       return;
     }
     handleComplete();
@@ -270,18 +280,7 @@ export default function WritingSessionModal({
       return;
     }
     if (timerActive || wordCount > 0) {
-      Alert.alert('Abandon session?', 'Your writing will not be saved.', [
-        { text: 'Keep writing', style: 'cancel' },
-        {
-          text: 'Abandon',
-          style: 'destructive',
-          onPress: () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setTimerActive(false);
-            onClose();
-          },
-        },
-      ]);
+      setShowAbandonConfirm(true);
     } else {
       onClose();
     }
@@ -290,6 +289,10 @@ export default function WritingSessionModal({
   const openTermDetail = (term: Term) => {
     setSelectedTerm(term);
     setShowTermDetail(true);
+  };
+
+  const openQuote = () => {
+    setShowQuoteModal(true);
   };
 
   // Insert text into whichever editor is active
@@ -428,7 +431,11 @@ export default function WritingSessionModal({
             <View style={styles.divider} />
 
             {/* Prompt strip */}
-            <CompactPromptBar prompt={prompt} onTermPress={openTermDetail} />
+            <CompactPromptBar
+              prompt={prompt}
+              onPromptPress={openQuote}
+              onTermPress={openTermDetail}
+            />
 
 
             <View style={styles.divider} />
@@ -534,6 +541,40 @@ export default function WritingSessionModal({
         term={selectedTerm?.id ?? null}
         onClose={() => setShowTermDetail(false)}
       />
+      <QuoteModal
+        visible={showQuoteModal}
+        quote={prompt?.text ?? ''}
+        author={prompt?.author}
+        onClose={() => setShowQuoteModal(false)}
+      />
+
+      <ConfirmModal
+        visible={showEmptyConfirm}
+        title="Nothing written yet"
+        message="Write something first, or dismiss the session."
+        cancelText="Keep writing"
+        confirmText="Dismiss anyway"
+        onCancel={() => setShowEmptyConfirm(false)}
+        onConfirm={() => {
+          setShowEmptyConfirm(false);
+          handleDismiss();
+        }}
+      />
+
+      <ConfirmModal
+        visible={showAbandonConfirm}
+        title="Abandon session?"
+        message="Your writing will not be saved."
+        cancelText="Keep writing"
+        confirmText="Abandon"
+        onCancel={() => setShowAbandonConfirm(false)}
+        onConfirm={() => {
+          setShowAbandonConfirm(false);
+          if (timerRef.current) clearInterval(timerRef.current);
+          setTimerActive(false);
+          onClose();
+        }}
+      />
     </>
   );
 }
@@ -610,10 +651,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     minHeight: 48,
-    maxHeight: 56,
+    // allow extra room when prompt wraps into two lines
+  },
+  compactBarColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   compactWordWrap: {
-    flexDirection: 'row', alignItems: 'baseline', gap: 8, flexShrink: 0,
+    flexDirection: 'row', alignItems: 'baseline', gap: 8, flexShrink: 1,
   },
   compactLabel: {
     fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
@@ -627,6 +672,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#b8622a',
     letterSpacing: 0.3,
+    flexShrink: 1,
   },
 
   compactDivider: {
@@ -635,7 +681,7 @@ const styles = StyleSheet.create({
   },
   compactChipsScroll: { flex: 1 },
   compactChipsContent: {
-    alignItems: 'center', gap: 6, paddingRight: 8,
+    alignItems: 'center', gap: 6, paddingRight: 8, marginTop: 6,
   },
   compactChip: {
     backgroundColor: '#f0ebe6',

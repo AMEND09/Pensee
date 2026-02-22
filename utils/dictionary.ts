@@ -22,14 +22,16 @@ export type OnlineEntry = {
  * Collects synonyms and antonyms across ALL meanings/definitions for richer results.
  * Returns null if the word is not found or if an error occurs.
  */
-import { rhetoricalExamples } from './prompts';
+import { rhetoricalDefinitions, rhetoricalExamples } from './prompts';
 
 export async function fetchOnlineDefinition(term: string): Promise<OnlineEntry | null> {
   // if the term is one of the predefined rhetorical devices, return a
-  // fabricated entry containing only the supplied examples and avoid any
-  // network request.
-  if (term in rhetoricalExamples) {
-    const examples = rhetoricalExamples[term];
+  // fabricated entry containing only the supplied examples/definitions and
+  // avoid any network request.  previously logic only checked the examples map
+  // but we now also maintain definitions locally, so include that as well.
+  if (term in rhetoricalExamples || term in rhetoricalDefinitions) {
+    const examples = (rhetoricalExamples && rhetoricalExamples[term]) || [];
+    const def = (rhetoricalDefinitions && rhetoricalDefinitions[term]) || '';
     const meanings = [
       {
         partOfSpeech: 'rhetorical device',
@@ -40,7 +42,7 @@ export async function fetchOnlineDefinition(term: string): Promise<OnlineEntry |
     ];
     return {
       type: 'rhetorical device',
-      definition: '',
+      definition: def,
       example: '',
       synonyms: [],
       antonyms: [],
