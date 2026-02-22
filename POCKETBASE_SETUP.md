@@ -39,17 +39,30 @@ In the PocketBase Admin UI:
 | `good`     | Text     |          |                                         |
 | `bad`      | Text     |          |                                         |
 | `thoughts` | Text     |          |                                         |
-| `prompt`   | Text     |          | The creative word used for the session  |
+| `prompt`   | Text     |          | The quote prompt used for the session  |
 | `terms`    | Text     |          | JSON string of technique terms          |
 | `image`    | Text     |          | URI or base64 of any scanned image      |
 
-5. Under **API Rules**, set the following rules so users can only access their own sessions:
+5. Under **API Rules** for the **sessions** collection, set rules so each
+   record can only be operated on by its owner:
 
    - **List/Search rule:** `@request.auth.id = user`
    - **View rule:** `@request.auth.id = user`
    - **Create rule:** `@request.auth.id = user`
    - **Update rule:** `@request.auth.id = user`
    - **Delete rule:** `@request.auth.id = user`
+
+6. For the **users** collection (required so account deletion works):
+
+   - **List/Search rule:** `true`  (you probably don’t need to restrict this)
+   - **View rule:** `@request.auth.id = id`  – users can only read their own
+     profile
+   - **Update rule:** `@request.auth.id = id`  – users can only edit themselves
+   - **Delete rule:** `@request.auth.id = id`  – and crucially, users must be
+     allowed to delete their own account.  Without this the app’s delete
+     button will fail with a permission error.
+
+   (You may tighten the list/search rule later if you need an admin interface.)
 
 ---
 
@@ -92,7 +105,25 @@ Then in PocketBase Admin UI:
    pensee://auth
    ```
    Add `pensee://auth` to your **Authorized redirect URIs** in Google Cloud Console as well (for mobile OAuth).
+   When running in Expo (especially with the Go app or `expo start`), the
+   client uses Expo's proxy redirect URL rather than the custom scheme.  You
+   should also register the proxy URI with Google, which is typically of the
+   form:
+   ```
+   https://auth.expo.io/@<your‑username>/<your‑app‑slug>
+   ```
+   You can generate the exact value by running the following in a console
+   inside the project:
+   ```sh
+   npx expo-cli uri --scheme pensee
+   ```
+   (or just inspect `AuthSession.makeRedirectUri({ scheme: 'pensee', useProxy: true })`)
+   and add it as another authorized redirect URI.  This ensures sign-in
+   works while developing locally.
 
+   For web builds make sure to include your host origin (e.g. `http://localhost:19006`)
+   as an authorized redirect URI as well; our code will automatically handle the
+   web callback by reading the `code` query parameter and completing the flow.
 ---
 
 ## 5. Apple App Store Requirements

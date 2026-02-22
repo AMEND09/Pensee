@@ -489,86 +489,131 @@ export default function AccountModal({ visible, onClose }: Props) {
     setScreen('main');
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all your data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAccount();
-              setScreen('main');
-            } catch {
-              Alert.alert('Error', 'Could not delete your account. Please try again.');
-            }
-          },
-        },
-      ],
-    );
+    setShowDeleteConfirm(true);
   };
 
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <Pressable style={styles.overlay} onPress={handleClose}>
-          <Pressable style={styles.sheet} onPress={() => {}}>
-            {/* Handle */}
-            <View style={styles.handle} />
+  const confirmDelete = async () => {
+    setDeleteBusy(true);
+    try {
+      await deleteAccount();
+      setShowDeleteConfirm(false);
+      setScreen('main');
+    } catch (e: any) {
+      console.error('deleteAccount error', e);
+      const msg =
+        e?.response?.message ||
+        e?.message ||
+        'Could not delete your account. Please try again.';
+      Alert.alert('Error', msg);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Account</Text>
-              <TouchableOpacity onPress={handleClose} hitSlop={12} style={styles.closeBtn}>
-                <X size={20} color={Colors.textSecondary} />
+
+  return (
+    <>
+      <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+        <KeyboardAvoidingView
+          style={styles.root}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.overlay} onPress={handleClose}>
+            <Pressable style={styles.sheet} onPress={() => {}}>
+              {/* Handle */}
+              <View style={styles.handle} />
+
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.headerTitle}>Account</Text>
+                <TouchableOpacity onPress={handleClose} hitSlop={12} style={styles.closeBtn}>
+                  <X size={20} color={Colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.headerDivider} />
+
+              {/* Content */}
+              {screen === 'main' && !user && (
+                <NotSignedIn
+                  onSignIn={() => setScreen('sign-in')}
+                  onSignUp={() => setScreen('sign-up')}
+                />
+              )}
+              {screen === 'main' && user && (
+                <AccountMain
+                  onSignOut={handleSignOut}
+                  onEditName={() => setScreen('edit-name')}
+                  onDeleteAccount={handleDeleteAccount}
+                  onClose={handleClose}
+                />
+              )}
+              {screen === 'sign-in' && (
+                <SignInForm
+                  onBack={() => setScreen('main')}
+                  onSignUp={() => setScreen('sign-up')}
+                />
+              )}
+              {screen === 'sign-up' && (
+                <SignUpForm
+                  onBack={() => setScreen('main')}
+                  onSignIn={() => setScreen('sign-in')}
+                />
+              )}
+              {screen === 'edit-name' && user && (
+                <EditNameForm
+                  currentName={user.name}
+                  onBack={() => setScreen('main')}
+                />
+              )}
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* delete confirmation modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <Pressable style={styles.confirmOverlay} onPress={() => setShowDeleteConfirm(false)}>
+          <Pressable style={styles.confirmCard} onPress={() => {}}>
+            <Text style={styles.confirmTitle}>Confirm Deletion</Text>
+            <Text style={styles.confirmMessage}>
+              This will permanently delete your account and all your data. This action cannot be undone.
+            </Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, styles.smallBtn, deleteBusy && styles.disabled]}
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={deleteBusy}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryBtn, styles.smallBtn, deleteBusy && styles.disabled]}
+                onPress={confirmDelete}
+                disabled={deleteBusy}
+                activeOpacity={0.8}
+              >
+                {deleteBusy ? (
+                  <ActivityIndicator color={Colors.textOnAccent} />
+                ) : (
+                  <Text style={styles.primaryBtnText}>Delete</Text>
+                )}
               </TouchableOpacity>
             </View>
-
-            <View style={styles.headerDivider} />
-
-            {/* Content */}
-            {screen === 'main' && !user && (
-              <NotSignedIn
-                onSignIn={() => setScreen('sign-in')}
-                onSignUp={() => setScreen('sign-up')}
-              />
-            )}
-            {screen === 'main' && user && (
-              <AccountMain
-                onSignOut={handleSignOut}
-                onEditName={() => setScreen('edit-name')}
-                onDeleteAccount={handleDeleteAccount}
-                onClose={handleClose}
-              />
-            )}
-            {screen === 'sign-in' && (
-              <SignInForm
-                onBack={() => setScreen('main')}
-                onSignUp={() => setScreen('sign-up')}
-              />
-            )}
-            {screen === 'sign-up' && (
-              <SignUpForm
-                onBack={() => setScreen('main')}
-                onSignIn={() => setScreen('sign-in')}
-              />
-            )}
-            {screen === 'edit-name' && user && (
-              <EditNameForm
-                currentName={user.name}
-                onBack={() => setScreen('main')}
-              />
-            )}
           </Pressable>
         </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
+      </Modal>
+    </>
   );
 }
 
@@ -833,6 +878,43 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   disabled: { opacity: 0.55 },
+
+  /* delete confirmation modal */
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmCard: {
+    backgroundColor: Colors.cardBg,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    width: '80%',
+  },
+  confirmTitle: {
+    fontFamily: Font.serifBold,
+    fontSize: 18,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  /* make buttons narrower inside confirm modal */
+  smallBtn: {
+    flex: 1,
+    marginHorizontal: Spacing.xs,
+    width: undefined,
+  },
   linkRow: {
     alignItems: 'center',
     marginTop: Spacing.lg,

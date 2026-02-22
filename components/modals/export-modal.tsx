@@ -1,6 +1,7 @@
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { Download, Share2, X } from 'lucide-react-native';
+import html2canvas from 'html2canvas';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -69,7 +70,7 @@ function ExportCard({
   const text = excerpt(writing);
 
   return (
-    <View style={card.container}>
+    <View style={card.container} nativeID="export-card">
       {/* Decorative top accent line */}
       <View style={card.accentLine} />
 
@@ -227,6 +228,23 @@ export default function ExportModal({
   const [capturing, setCapturing] = useState(false);
 
   const captureImage = async (): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      // view-shot is not supported on web; use html2canvas to render the
+      // card element to a canvas and return a data URL.
+      setCapturing(true);
+      try {
+        const el = document.getElementById('export-card');
+        if (!el) return null;
+        const canvas = await html2canvas(el as HTMLElement, { backgroundColor: null });
+        return canvas.toDataURL('image/png');
+      } catch (err) {
+        console.error('html2canvas capture failed', err);
+        return null;
+      } finally {
+        setCapturing(false);
+      }
+    }
+
     if (!viewShotRef.current?.capture) return null;
     setCapturing(true);
     try {

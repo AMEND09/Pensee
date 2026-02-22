@@ -22,7 +22,7 @@ type Props = {
   onClose: () => void;
   wordCount: number;
   writing: string;
-  /** creative word prompt text for the session */
+  /** quote prompt text for the session */
   prompt: string;
   terms: Term[];
   /** optional image URI/base64 captured during writing session */

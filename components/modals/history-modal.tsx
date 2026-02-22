@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Session } from '../../utils/storage';
+import { Share2 } from 'lucide-react-native';
+// ExportModal will be required dynamically inside the component to avoid
+// potential bundler order issues on web.  See runtime check below.
 
 // 
 // Types
@@ -116,7 +119,7 @@ const SPINE_COL_W = 44;
 // TimelineRow
 // 
 
-function TimelineRow({ item, onPress }: { item: FlatItem; onPress: () => void }) {
+function TimelineRow({ item, onPress, onShare }: { item: FlatItem; onPress: () => void; onShare: () => void }) {
   const { session, isFirstOfDay, isLastOfDay, sessionIndexInDay, totalInDay, isFirstOverall, isLastOverall } = item;
   const { weekday, monthDay } = niceDate(session.date);
   const isSub = sessionIndexInDay > 0;             // 2nd+ session on same day
@@ -176,6 +179,18 @@ function TimelineRow({ item, onPress }: { item: FlatItem; onPress: () => void })
         )}
         <Text style={styles.wordCount}>{session.wordCount} words</Text>
       </View>
+
+      {/* share button on far right */}
+      <TouchableOpacity
+        style={styles.rowShareBtn}
+        onPress={(e) => {
+          e.stopPropagation();
+          onShare();
+        }}
+        activeOpacity={0.6}
+      >
+        <Share2 size={18} color={Colors.accent} />
+      </TouchableOpacity>
 
     </TouchableOpacity>
   );
@@ -260,10 +275,14 @@ export default function HistoryModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  // require inside component
+  const ExportModal = require('./export-modal').default;
+
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Session | null>(null);
+  const [shareSession, setShareSession] = useState<Session | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -372,6 +391,7 @@ export default function HistoryModal({
                     key={item.session.id}
                     item={item}
                     onPress={() => setSelected(item.session)}
+                    onShare={() => setShareSession(item.session)}
                   />
                 ))}
               </ScrollView>
@@ -379,6 +399,15 @@ export default function HistoryModal({
 
           </View>
         )}
+      {/* share export modal for timeline items */}
+      <ExportModal
+        visible={!!shareSession}
+        onClose={() => setShareSession(null)}
+        prompt={shareSession?.prompt ?? ''}
+        terms={shareSession?.terms}
+        writing={shareSession?.writing ?? ''}
+        wordCount={shareSession?.wordCount ?? 0}
+      />
       </SafeAreaView>
     </Modal>
   );
@@ -661,8 +690,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     marginTop: 6,
+  },  rowShareBtn: {
+    padding: Spacing.sm,
   },
-
   // Detail
   detailContent: {
     paddingHorizontal: Spacing.lg,
