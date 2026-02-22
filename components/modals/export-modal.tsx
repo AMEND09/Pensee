@@ -69,16 +69,21 @@ function ExportCard({
 }) {
   const text = excerpt(writing);
 
+  // shrink writing font size if the excerpt is particularly long
+  const writingFontSize = text.length > 160 ? 12 : 14;
+
   return (
-    <View style={card.container} nativeID="export-card">
+    <View style={[card.container]} nativeID="export-card">
       {/* Decorative top accent line */}
       <View style={card.accentLine} />
 
       {/* Ornament */}
       <Text style={card.ornament}>✦</Text>
 
-      {/* Prompt word */}
-      <Text style={card.promptWord}>{prompt}</Text>
+      {/* Prompt word (allow two lines, never truncate) */}
+      <Text style={card.promptWord} numberOfLines={2} ellipsizeMode="tail">
+        {prompt}
+      </Text>
 
       {/* Technique chips */}
       {terms && terms.length > 0 && (
@@ -96,7 +101,7 @@ function ExportCard({
 
       {/* Writing excerpt */}
       {text ? (
-        <Text style={card.writingText}>{text}</Text>
+        <Text style={[card.writingText, { fontSize: writingFontSize }]}>{text}</Text>
       ) : null}
 
       {/* Word count */}
@@ -118,6 +123,8 @@ const card = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: 28,
     width: 340,
+    height: '100%',        // fill parent aspect-ratio box
+    justifyContent: 'space-between',
     shadowColor: 'rgba(61,43,31,0.18)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -435,6 +442,8 @@ const styles = StyleSheet.create({
   viewShot: {
     borderRadius: Radius.lg,
     overflow: 'hidden',
+    width: 340,
+    aspectRatio: 4 / 5, // lock to 4:5 ratio
   },
   cardBackground: {
     backgroundColor: '#f5ede0',

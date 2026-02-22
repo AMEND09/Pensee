@@ -149,29 +149,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const authUrl = urlObj.toString();
 
     if (Platform.OS === 'web') {
-      // store verifier for fallback case (navigation instead of popup)
+      // store verifier for callback handling regardless of how we open URL
       try {
         sessionStorage.setItem('pensee.oauth.codeVerifier', googleProvider.codeVerifier);
       } catch {}
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
-      if (result.type === 'success') {
-        // we can clear the verifier since flow completed in same context
-        sessionStorage.removeItem('pensee.oauth.codeVerifier');
-        const url = new URL(result.url);
-        const code = url.searchParams.get('code');
-        if (!code) throw new Error('No authorization code received from Google.');
-        await pb.collection('users').authWithOAuth2Code(
-          'google',
-          code,
-          googleProvider.codeVerifier,
-          redirectUrl,
-          { name: '', avatarURL: '' },
-        );
-      } else {
-        // popup blocked/dismissed – navigate the page and complete in effect
-        window.location.href = authUrl;
-      }
+      // On web we avoid the popup completely; in mobile Safari the browser
+      // often blocks or never resolves the popup, so a simple navigation is
+      // more reliable.  The redirect will hit handleWebCallback in this same
+      // page and finish the PKCE exchange.
+      window.location.href = authUrl;
       return;
     }
 

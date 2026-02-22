@@ -28,7 +28,10 @@ import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, 
 // Constants
 // 
 
-const WORD_ROW_H = 54;   // height of a single frame in the main-word reel
+// height of one line in the main-word reel.  We allow two lines on the
+// home screen, so the row height is double this value (108px) and we pass
+// maxLines=2 when rendering the reel.
+const WORD_ROW_H = 108;
 const TERM_ROW_H = 32;   // height of a single frame in a technique-term reel (increased for larger chips)
 
 // 
@@ -77,13 +80,18 @@ const WordReel = forwardRef<
     fades?: boolean;
     fadeColor?: string;
     /**
+     * Maximum number of text lines per frame (used for wrapping/ellipsis).
+     * Defaults to 1.
+     */
+    maxLines?: number;
+    /**
      * When true the reel will scroll downward instead of upward.  This
      * reverses the animation and also flips the frames so the final value
      * still ends up in view.
      */
     reverse?: boolean;
   }
->(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', reverse = false }, ref) => {
+>(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', maxLines = 1, reverse = false }, ref) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const [items, setItems] = useState<string[]>(['']);
   const animRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -168,7 +176,7 @@ const WordReel = forwardRef<
             key={i}
             style={{ height: rowHeight, justifyContent: 'center', alignItems: 'flex-start', width: '100%' }}
           >
-            <Text style={textStyle} numberOfLines={1} ellipsizeMode="tail">
+            <Text style={textStyle} numberOfLines={maxLines} ellipsizeMode="tail">
               {word}
             </Text>
           </View>
@@ -388,6 +396,7 @@ export default function HomeScreen() {
                 ref={wordReelRef}
                 rowHeight={WORD_ROW_H}
                 textStyle={styles.wordText}
+                maxLines={2}
                 reverse
               />
             </TouchableOpacity>
@@ -617,7 +626,8 @@ const styles = StyleSheet.create({
     fontSize: 38,
     color: Colors.textPrimary,
     letterSpacing: 1,
-    lineHeight: WORD_ROW_H,
+    // allow two lines but keep line height roughly original
+    lineHeight: WORD_ROW_H / 2,
   },
 
   //  Techniques
