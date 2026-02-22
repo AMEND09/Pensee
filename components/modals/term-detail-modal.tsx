@@ -1,16 +1,17 @@
 import React from 'react';
 import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
+import { rhetoricalExamples } from '../../utils/prompts';
 
 type Props = {
   term: string | null;
@@ -25,6 +26,10 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
   React.useEffect(() => {
     setOnlineEntry(null);
     if (term) {
+      // if we have manual examples for this rhetorical device, the
+      // dictionary helper will return a fabricated entry without hitting
+      // the network, but we still show the loading spinner briefly to
+      // keep the UX consistent.
       setLoadingOnline(true);
       fetchOnlineDefinition(term).then((res) => {
         setOnlineEntry(res);
@@ -60,6 +65,29 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
                 </View>
               );
             }
+
+            // if this term has predefined rhetorical examples, render a simple
+            // list rather than the full dictionary layout. Note that
+            // fetchOnlineDefinition already returns a dummy entry, but this
+            // conditional gives us finer control over presentation.
+            if (term && term in rhetoricalExamples) {
+              const examples = rhetoricalExamples[term];
+              return (
+                <ScrollView
+                  style={styles.scroll}
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.meaningHeader}>Examples</Text>
+                  {examples.map((ex, idx) => (
+                    <View key={idx} style={styles.exampleBlock}>
+                      <Text style={styles.exampleText}>{ex}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              );
+            }
+
             if (onlineEntry) {
               return (
                 <ScrollView

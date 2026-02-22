@@ -1,15 +1,15 @@
 ﻿import { ChevronDown, ChevronUp, Search, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
@@ -178,7 +178,7 @@ export default function DictionaryModal({ visible, onClose, initialQuery = '' }:
               <View style={styles.hintView}>
                 <Text style={styles.hintTitle}>Dictionary</Text>
                 <Text style={styles.hintBody}>
-                  Search any word or rhetorical term for its definition, examples, synonyms, and antonyms. Results are pulled from the online dictionary API.
+                  Search any word or rhetorical term for its definition, examples, synonyms, and antonyms. Results appear instantly as you type.
                 </Text>
               </View>
             ) : onlineResult ? (

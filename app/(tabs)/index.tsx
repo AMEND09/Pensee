@@ -1,13 +1,13 @@
 ﻿import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Easing,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HistoryModal from '../../components/modals/history-modal';
@@ -54,7 +54,7 @@ function shuffleArr<T>(arr: T[]): T[] {
 
 
 // 
-// WordReel    vertical slot-machine strip
+// WordReel    vertical scrolling strip
 // 
 
 type ReelRef = {
@@ -70,8 +70,14 @@ const WordReel = forwardRef<
     textStyle: object;
     fades?: boolean;
     fadeColor?: string;
+    /**
+     * When true the reel will scroll downward instead of upward.  This
+     * reverses the animation and also flips the frames so the final value
+     * still ends up in view.
+     */
+    reverse?: boolean;
   }
->(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff' }, ref) => {
+>(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', reverse = false }, ref) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const [items, setItems] = useState<string[]>(['']);
   const animRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -79,25 +85,69 @@ const WordReel = forwardRef<
   useImperativeHandle(ref, () => ({
     spin(frames: string[], duration: number, onDone?: () => void) {
       if (animRef.current) animRef.current.stop();
-      setItems(frames);
-      translateY.setValue(0);
+
+      // if reversing direction we need to render the frames in reverse order
+      // and animate from the "bottom" back to the top so the final value
+      // ends up visible at the end of the animation.
+      let working = frames;
+      let startVal = 0;
+      let endVal = -(frames.length - 1) * rowHeight;
+      if (reverse) {
+        working = [...frames].reverse();
+        startVal = -(working.length - 1) * rowHeight;
+        endVal = 0;
+      }
+
+      setItems(working);
+      translateY.setValue(startVal);
       if (duration === 0) {
-        translateY.setValue(-(frames.length - 1) * rowHeight);
+        translateY.setValue(endVal);
         onDone?.();
         return;
       }
-      const anim = Animated.timing(translateY, {
-        toValue: -(frames.length - 1) * rowHeight,
-        duration,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      });
-      animRef.current = anim;
-      anim.start(({ finished }) => { if (finished) onDone?.(); });
+
+      // snapping logic: most of the travel happens at a constant (linear)
+      // speed, and the last frame is covered quickly with an easing curve to
+      // avoid the perception of the reel slowing down for too long.  We split
+      // the animation into two segments if there's enough time.
+      const SNAP_MS = 150;
+      if (duration > SNAP_MS * 2) {
+        const mainDur = duration - SNAP_MS;
+        // choose offset direction based on which way we're moving
+        const offset = rowHeight * (endVal < startVal ? 1 : -1);
+        const nearEnd = endVal + offset;
+        const seq = Animated.sequence([
+          Animated.timing(translateY, {
+            toValue: nearEnd,
+            duration: mainDur,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: endVal,
+            duration: SNAP_MS,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]);
+        animRef.current = seq;
+        seq.start(({ finished }) => { if (finished) onDone?.(); });
+      } else {
+        const anim = Animated.timing(translateY, {
+          toValue: endVal,
+          duration,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        });
+        animRef.current = anim;
+        anim.start(({ finished }) => { if (finished) onDone?.(); });
+      }
     },
     show(value: string) {
       if (animRef.current) animRef.current.stop();
       setItems([value]);
+      // keeping translateY at zero is fine in both directions because
+      // there is only one item.
       translateY.setValue(0);
     },
   }));
@@ -180,21 +230,41 @@ export default function HomeScreen() {
     // Build word reel frames: 14 random words then the final word scrolling upward
     const wordFrames = [...shuffleArr(creativeWords).slice(0, 14), newPrompt.text];
 
-    wordReelRef.current?.spin(wordFrames, 1700, () => {
-      // Cascade the 3 term reels one after another
-      let completed = 0;
-      newPrompt.terms.forEach((term, i) => {
-        const termFrames = [...shuffleArr(allTermLabels).slice(0, 10), term.label];
-        setTimeout(() => {
-          termReelRefs.current[i]?.spin(termFrames, 950, () => {
-            completed++;
-            if (completed === 3) {
-              setPrompt(newPrompt);
-              setIsSpinning(false);
-            }
-          });
-        }, i * 300);
-      });
+    // All reels (word + terms) will spin at the same time, but we stagger
+    // their stop times by giving each a progressively longer duration.
+    // once every reel has finished we update the prompt and clear the flag.
+    let completed = 0;
+    const onDone = () => {
+      completed++;
+      if (completed === 4) {
+        setPrompt(newPrompt);
+        setIsSpinning(false);
+      }
+    };
+
+    // start all reels spinning at once, but stagger their stop times so they finish
+    // sequentially.  Use a base duration for the word reel and add a small offset for
+    // each term reel (250ms apart) so the slot‑machine effect reads “one by one”.
+    // word reel duration stays the same.  term reels maintain the same
+    // durations as before, but we give them more frames to travel so their
+    // **velocity** (distance / time) is higher.  This creates the perception of
+    // a faster spin while keeping the overall sequence length unchanged.
+    const WORD_BASE = 1700;
+    const TERM_BASE = 1200;
+    const TERM_STAGGER = 200; // ms between each term stopping
+    const TERM_VELOCITY = 2; // multiplier for number of random frames
+    const TERM_FRAME_COUNT = 10; // base number of random frames produced
+
+    wordReelRef.current?.spin(wordFrames, WORD_BASE, onDone);
+
+    newPrompt.terms.forEach((term, i) => {
+      // generate more frames for higher velocity; leave the final label at the end
+      const termFrames = [
+        ...shuffleArr(allTermLabels).slice(0, TERM_FRAME_COUNT * TERM_VELOCITY),
+        term.label,
+      ];
+      const duration = TERM_BASE + i * TERM_STAGGER;
+      termReelRefs.current[i]?.spin(termFrames, duration, onDone);
     });
   }, [isSpinning]);
 
@@ -268,7 +338,7 @@ export default function HomeScreen() {
 
           <View style={styles.cardDivider} />
 
-          {/* Slot-machine word reel */}
+          {/* Word reel display */}
           <TouchableOpacity
             style={styles.wordReelWrapper}
             onPress={() => !isSpinning && openTermDetail({ id: prompt.text, label: prompt.text })}
@@ -278,6 +348,7 @@ export default function HomeScreen() {
               ref={wordReelRef}
               rowHeight={WORD_ROW_H}
               textStyle={styles.wordText}
+              reverse
             />
           </TouchableOpacity>
         </View>
@@ -304,6 +375,7 @@ export default function HomeScreen() {
                   rowHeight={TERM_ROW_H}
                   containerStyle={styles.termReelContainer}
                   textStyle={styles.termChipLabel}
+                  reverse
                 />
               </TouchableOpacity>
             ))}

@@ -22,7 +22,32 @@ export type OnlineEntry = {
  * Collects synonyms and antonyms across ALL meanings/definitions for richer results.
  * Returns null if the word is not found or if an error occurs.
  */
+import { rhetoricalExamples } from './prompts';
+
 export async function fetchOnlineDefinition(term: string): Promise<OnlineEntry | null> {
+  // if the term is one of the predefined rhetorical devices, return a
+  // fabricated entry containing only the supplied examples and avoid any
+  // network request.
+  if (term in rhetoricalExamples) {
+    const examples = rhetoricalExamples[term];
+    const meanings = [
+      {
+        partOfSpeech: 'rhetorical device',
+        definitions: examples.map((ex) => ({ definition: '', example: ex, synonyms: [], antonyms: [] })),
+        synonyms: [],
+        antonyms: [],
+      },
+    ];
+    return {
+      type: 'rhetorical device',
+      definition: '',
+      example: '',
+      synonyms: [],
+      antonyms: [],
+      meanings,
+    };
+  }
+
   try {
     const resp = await fetch(
       `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`
