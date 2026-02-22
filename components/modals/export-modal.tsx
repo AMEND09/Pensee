@@ -3,18 +3,18 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import html2canvas from 'html2canvas';
 import { Download, Share2, X } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import { APP_URL } from '../../constants/config';
@@ -39,6 +39,12 @@ type Props = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+// fixed dimensions for the export card. we render at a known width so
+// the layout doesn’t collapse on narrow phones, and we can request a
+// higher-resolution capture regardless of on-screen size.
+const CARD_BASE_WIDTH = 360;
+const CARD_BASE_HEIGHT = CARD_BASE_WIDTH * (5 / 4);
 
 function stripHtml(html: string): string {
   return html
@@ -75,7 +81,7 @@ function CardFooter() {
   return (
     <View style={card.footer}>
       <View style={card.footerLine} />
-      <Text style={card.footerUrl}>{APP_URL.replace('https://', '')}</Text>
+      <Text allowFontScaling={false} style={card.footerUrl}>{APP_URL.replace('https://', '')}</Text>
       <View style={card.footerLine} />
     </View>
   );
@@ -87,7 +93,7 @@ function ChipRow({ terms, small }: { terms?: { id: string; label: string }[]; sm
     <View style={[card.chipsRow, small && card.chipsRowSmall]}>
       {terms.map((t) => (
         <View key={t.id} style={[card.chip, small && card.chipSmall]}>
-          <Text style={[card.chipText, small && card.chipTextSmall]}>{t.label}</Text>
+          <Text allowFontScaling={false} style={[card.chipText, small && card.chipTextSmall]}>{t.label}</Text>
         </View>
       ))}
     </View>
@@ -101,6 +107,9 @@ function ExportCard({
   writing,
   wordCount,
   template,
+  promptFontOverride,
+  onPromptWrapperLayout,
+  onPromptTextLayout,
 }: {
   prompt: string;
   quoteAuthor?: string;
@@ -108,19 +117,35 @@ function ExportCard({
   writing: string;
   wordCount: number;
   template: CardTemplate;
+  // optional override and layout callbacks supplied by parent
+  promptFontOverride?: number;
+  onPromptWrapperLayout?: (e: any) => void;
+  onPromptTextLayout?: (e: any) => void;
 }) {
   // ── Text Focus ────────────────────────────────────────────────────────────
   if (template === 'text-focus') {
     const text = excerpt(writing, 320);
     const writingFontSize = text.length > 240 ? 12 : 14;
-    const pfs = promptFontSize(prompt, 16); // smaller base size
+    const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 16);
     return (
       <View style={card.container} nativeID="export-card">
         {/* Compact header: prompt + chips (no accent line, smaller spacing) */}
         <View style={card.textFocusHeader}>
-          <Text style={[card.promptWordSmall, { fontSize: pfs, lineHeight: pfs * 1.3, marginBottom: 4 }]}>
-            {prompt}
-          </Text>
+          <View
+            style={card.textFocusPromptWrapper}
+            onLayout={onPromptWrapperLayout}
+          >
+            <Text
+              allowFontScaling={false}
+              style={[
+                card.promptWordSmall,
+                { fontSize: dynamicFont, lineHeight: dynamicFont * 1.3, marginBottom: 4 },
+              ]}
+              onLayout={onPromptTextLayout}
+            >
+              {prompt}
+            </Text>
+          </View>
           <ChipRow terms={terms} small />
         </View>
 
@@ -129,11 +154,11 @@ function ExportCard({
 
         {/* Writing — the star */}
         {text ? (
-          <Text style={[card.writingTextLarge, { fontSize: writingFontSize }]}>{text}</Text>
+          <Text allowFontScaling={false} style={[card.writingTextLarge, { fontSize: writingFontSize }]}>{text}</Text>
         ) : null}
 
         {/* Word count */}
-        <Text style={card.wordCount}>{wordCount} words</Text>
+        <Text allowFontScaling={false} style={card.wordCount}>{wordCount} words</Text>
 
         <CardFooter />
       </View>
@@ -142,23 +167,38 @@ function ExportCard({
 
   // ── Quote Only ────────────────────────────────────────────────────────────
   if (template === 'quote-only') {
-    const pfs = promptFontSize(prompt, 42);
+    // note: parent component may pass an override font and layout callbacks
+    // via props when it needs to measure and adjust dynamically.
+    const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 42);
     return (
-      <View style={[card.container, card.containerCentered]} nativeID="export-card">
-        <View style={card.accentLine} />
-        <Text style={card.ornamentLarge}>✦</Text>
+      <View style={card.container} nativeID="export-card">
+        <View style={card.minimalTop}>
+          <View style={card.accentLine} />
+          <Text allowFontScaling={false} style={card.ornamentLarge}>✦</Text>
+        </View>
 
-        <Text style={[card.promptWordLarge, { fontSize: pfs, lineHeight: pfs * 1.25 }]}>
-          {prompt}
-        </Text>
+        <View style={card.promptWrapper} onLayout={onPromptWrapperLayout}>
+          <Text
+            allowFontScaling={false}
+            style={[
+              card.promptWordLarge,
+              { fontSize: dynamicFont, lineHeight: dynamicFont * 1.2, marginBottom: 0 },
+            ]}
+            onLayout={onPromptTextLayout}
+          >
+            {prompt}
+          </Text>
+        </View>
 
-        <ChipRow terms={terms} />
+        <View style={card.minimalBottom}>
+          <ChipRow terms={terms} />
 
-        {quoteAuthor ? (
-          <Text style={card.authorText}>— {quoteAuthor}</Text>
-        ) : null}
+          {quoteAuthor ? (
+            <Text allowFontScaling={false} style={card.authorText}>— {quoteAuthor}</Text>
+          ) : null}
 
-        <CardFooter />
+          <CardFooter />
+        </View>
       </View>
     );
   }
@@ -166,25 +206,37 @@ function ExportCard({
   // ── Quote Focus (default) ─────────────────────────────────────────────────
   const text = excerpt(writing);
   const writingFontSize = text.length > 160 ? 12 : 14;
-  const pfs = promptFontSize(prompt, 36);
+  const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 36);
   return (
     <View style={card.container} nativeID="export-card">
       <View style={card.accentLine} />
-      <Text style={card.ornament}>✦</Text>
+      <Text allowFontScaling={false} style={card.ornament}>✦</Text>
 
-      <Text style={[card.promptWord, { fontSize: pfs, lineHeight: pfs * 1.22 }]}>
-        {prompt}
-      </Text>
+      <View
+        style={card.quotePromptWrapper}
+        onLayout={onPromptWrapperLayout}
+      >
+        <Text
+          allowFontScaling={false}
+          style={[
+            card.promptWord,
+            { fontSize: dynamicFont, lineHeight: dynamicFont * 1.22 },
+          ]}
+          onLayout={onPromptTextLayout}
+        >
+          {prompt}
+        </Text>
+      </View>
 
       <ChipRow terms={terms} />
 
       <View style={card.divider} />
 
       {text ? (
-        <Text style={[card.writingText, { fontSize: writingFontSize }]}>{text}</Text>
+        <Text allowFontScaling={false} style={[card.writingText, { fontSize: writingFontSize }]}>{text}</Text>
       ) : null}
 
-      <Text style={card.wordCount}>{wordCount} words</Text>
+      <Text allowFontScaling={false} style={card.wordCount}>{wordCount} words</Text>
 
       <CardFooter />
     </View>
@@ -236,6 +288,7 @@ const card = StyleSheet.create({
     fontSize: 14,
     color: Colors.accent,
     textAlign: 'center',
+    alignSelf: 'center',
     marginBottom: 8,
     letterSpacing: 6,
   },
@@ -244,6 +297,7 @@ const card = StyleSheet.create({
     fontSize: 20,
     color: Colors.accent,
     textAlign: 'center',
+    alignSelf: 'center',
     marginBottom: 16,
     letterSpacing: 8,
   },
@@ -275,6 +329,33 @@ const card = StyleSheet.create({
     letterSpacing: 1.5,
     lineHeight: 52,
     marginBottom: 16,
+  },
+  promptWrapper: {
+    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 0,
+  },
+  quotePromptWrapper: {
+    width: '100%',
+    minHeight: 120,
+    maxHeight: 260,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textFocusPromptWrapper: {
+    width: '100%',
+    minHeight: 32,
+    maxHeight: 96,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  minimalTop: {
+    alignItems: 'center',
+  },
+  minimalBottom: {
+    alignItems: 'center',
   },
 
   // ── Chips ───────────────────────────────────────────────────────────────
@@ -408,6 +489,39 @@ export default function ExportModal({
   const viewShotRef = useRef<ViewShot | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [template, setTemplate] = useState<CardTemplate>('quote-focus');
+  const [previewWidth, setPreviewWidth] = useState(CARD_BASE_WIDTH);
+
+  // dynamic font size used by the quote-only (minimal) template. we start
+  // with the heuristic base size and then shrink further if the rendered text
+  // does not fit the available vertical space.
+  const initialBase = template === 'text-focus' ? 16 : template === 'quote-focus' ? 36 : 42;
+  const [promptFont, setPromptFont] = useState(() => promptFontSize(prompt, initialBase));
+  const [wrapperHeight, setWrapperHeight] = useState(0);
+  const [textHeight, setTextHeight] = useState(0);
+  const previewCardWidth = Math.min(
+    CARD_BASE_WIDTH,
+    Math.max(220, previewWidth - Spacing.md * 2),
+  );
+
+  // reset font whenever the prompt or template changes
+  useEffect(() => {
+    const base = template === 'text-focus' ? 16 : template === 'quote-focus' ? 36 : 42;
+    setPromptFont(promptFontSize(prompt, base));
+    setWrapperHeight(0);
+    setTextHeight(0);
+  }, [prompt, template]);
+
+  // if the text overflows the wrapper, shrink the font incrementally.
+  useEffect(() => {
+    if (
+      wrapperHeight > 0 &&
+      textHeight > 0 &&
+      textHeight > wrapperHeight + 1 &&
+      promptFont > 8
+    ) {
+      setPromptFont((f) => f - 2);
+    }
+  }, [wrapperHeight, textHeight, promptFont]);
 
   const captureImage = async (): Promise<string | null> => {
     if (Platform.OS === 'web') {
@@ -430,7 +544,14 @@ export default function ExportModal({
     if (!viewShotRef.current?.capture) return null;
     setCapturing(true);
     try {
-      const uri = await viewShotRef.current.capture();
+      // request a fixed-resolution capture rather than relying on whatever
+      // size the view happened to be on screen. this stops the card from
+      // shrinking on narrow phones and keeps text proportionate.
+      const uri = await viewShotRef.current.capture({
+        width: CARD_BASE_WIDTH * 3,   // 3× for a reasonably high-res image
+        height: CARD_BASE_HEIGHT * 3,
+        quality: 1,
+      });
       return uri;
     } finally {
       setCapturing(false);
@@ -531,11 +652,17 @@ export default function ExportModal({
           </View>
 
           {/* Preview */}
-          <View style={styles.previewArea}>
+          <View
+            style={styles.previewArea}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (w > 0) setPreviewWidth(w);
+            }}
+          >
             <ViewShot
               ref={viewShotRef}
               options={{ format: 'png', quality: 1.0 }}
-              style={styles.viewShot}
+              style={[styles.viewShot, { width: previewCardWidth }]}
             >
               {/* Warm parchment background wrapper */}
               <View style={styles.cardBackground}>
@@ -546,6 +673,9 @@ export default function ExportModal({
                   writing={writing}
                   wordCount={wordCount}
                   template={template}
+                  promptFontOverride={promptFont}
+                  onPromptWrapperLayout={(e) => setWrapperHeight(e.nativeEvent.layout.height)}
+                  onPromptTextLayout={(e) => setTextHeight(e.nativeEvent.layout.height)}
                 />
               </View>
             </ViewShot>
@@ -645,13 +775,14 @@ const styles = StyleSheet.create({
   },
   previewArea: {
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,      // reduce side padding so card can stretch closer to screen edges
     paddingBottom: Spacing.lg,
+    width: '100%',
   },
   viewShot: {
     borderRadius: Radius.lg,
     overflow: 'hidden',
-    width: '100%',       // fill previewArea width (respects modal padding)
+    width: '100%',
     aspectRatio: 4 / 5, // enforces 4:5 on the captured area
   },
   cardBackground: {

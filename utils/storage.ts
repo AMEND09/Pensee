@@ -20,6 +20,8 @@ export type Session = {
   image?: string;
   /** the creative prompt word used during the session */
   prompt?: string;
+  /** author of the quote prompt, if applicable */
+  quoteAuthor?: string;
   /** technique words chosen for the prompt */
   terms?: { id: string; label: string }[];
 };
@@ -52,6 +54,7 @@ function pbRecordToSession(record: Record<string, any>): Session {
     thoughts: (record['thoughts'] as string) ?? '',
     image: record['image'] as string | undefined,
     prompt: record['prompt'] as string | undefined,
+    quoteAuthor: record['quoteAuthor'] as string | undefined,
     terms: (() => {
       if (!record['terms']) return undefined;
       try { return JSON.parse(record['terms'] as string); } catch { return undefined; }
@@ -105,6 +108,7 @@ export async function saveSession(session: Omit<Session, 'id'>): Promise<Session
         thoughts: session.thoughts,
         image: session.image,
         prompt: session.prompt,
+        quoteAuthor: session.quoteAuthor ?? null,
         terms: session.terms ? JSON.stringify(session.terms) : null,
       });
       return pbRecordToSession(record);

@@ -1,16 +1,16 @@
 ﻿import { Share2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Session } from '../../utils/storage';
@@ -234,9 +234,14 @@ function SessionDetail({ session, onBack }: { session: Session; onBack: () => vo
       >
         <Text style={styles.detailDate}>{fullDate(session.date)}</Text>
         {session.prompt ? (
-          <Text style={styles.detailHero}>{session.prompt}</Text>
+          <>
+            <Text style={styles.detailHero}>{session.prompt}</Text>
+            {session.quoteAuthor ? (
+              <Text style={styles.detailAuthor}>— {session.quoteAuthor}</Text>
+            ) : null}
+          </>
         ) : (
-          <Text style={[styles.detailHero, { color: Colors.textMuted, fontStyle: 'italic' }]}>
+          <Text style={[styles.detailHero, { color: Colors.textMuted, fontStyle: 'italic' }]}> 
             No prompt recorded
           </Text>
         )}
@@ -404,11 +409,12 @@ export default function HistoryModal({
         visible={!!shareSession}
         onClose={() => setShareSession(null)}
         prompt={shareSession?.prompt ?? ''}
+        quoteAuthor={shareSession?.quoteAuthor}
         terms={shareSession?.terms}
         writing={shareSession?.writing ?? ''}
         wordCount={shareSession?.wordCount ?? 0}
       />
-      {/* quoteAuthor is not stored on Session, so it's omitted here */}
+      {/* quoteAuthor is now stored on Session and passed along */}
       </SafeAreaView>
     </Modal>
   );
@@ -715,6 +721,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: 48,
     marginBottom: Spacing.md,
+  },
+  detailAuthor: {
+    fontFamily: Font.serif,
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+    fontStyle: 'italic',
   },
   detailImage: {
     width: '100%',

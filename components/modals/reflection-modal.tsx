@@ -24,6 +24,8 @@ type Props = {
   writing: string;
   /** quote prompt text for the session */
   prompt: string;
+  /** optional author for the quote prompt */
+  quoteAuthor?: string;
   terms: Term[];
   /** optional image URI/base64 captured during writing session */
   image?: string;
@@ -94,6 +96,7 @@ export default function ReflectionModal({
   wordCount,
   writing,
   prompt,
+  quoteAuthor,
   terms,
   image,
   onSave,
@@ -131,6 +134,7 @@ export default function ReflectionModal({
         bad,
         thoughts,
         prompt,
+        quoteAuthor,
         terms,
         image: scanImage,
       });

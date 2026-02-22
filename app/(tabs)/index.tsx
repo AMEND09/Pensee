@@ -23,16 +23,12 @@ import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
-import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term, rhetoricalDefinitions } from '../../utils/prompts';
+import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
 
 // 
 // Constants
 // 
 
-// height of one line in the main-word reel.  We allow two lines on the
-// home screen, so the row height is double this value (108px) and we pass
-// maxLines=2 when rendering the reel.
-const WORD_ROW_H = 108;
 const TERM_ROW_H = 32;   // height of a single frame in a technique-term reel (increased for larger chips)
 
 // 
@@ -207,12 +203,18 @@ const WordReel = forwardRef<
 export default function HomeScreen() {
   // prompt may be fetched asynchronously; start null while loading
   const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [displayText, setDisplayText] = useState('');
   const [loadingPrompt, setLoadingPrompt] = useState(true);
+  const [reelDone, setReelDone] = useState(false);
+  const [quoteFitReady, setQuoteFitReady] = useState(true);
+  const revealOpacity = useRef(new Animated.Value(1)).current;
+  const isRevealingRef = useRef(false);
 
   // grab initial quote on mount
   useEffect(() => {
     getDailyPrompt(new Date()).then((p) => {
       setPrompt(p);
+      setDisplayText(p.text);
       setLoadingPrompt(false);
     });
   }, []);
@@ -225,6 +227,16 @@ export default function HomeScreen() {
   const mobile = width < 600;
   const horizontalPadding = mobile ? Spacing.md : Spacing.lg;
   const bottomPadding = mobile ? Spacing.xs : Spacing.lg * 5;
+
+  // fixed viewport for quote area (same size whether spinning or static),
+  // tuned by device size.
+  const quoteBoxHeight = React.useMemo(() => {
+    const ratio = mobile ? 0.26 : 0.2;
+    const candidate = Math.round(height * ratio);
+    const min = mobile ? 130 : 120;
+    const max = mobile ? 240 : 240;
+    return Math.max(min, Math.min(max, candidate));
+  }, [height, mobile]);
 
   // Reel refs
   const wordReelRef = useRef<ReelRef>(null);
@@ -259,53 +271,64 @@ export default function HomeScreen() {
   }, [prompt]);
 
   const handleShuffle = useCallback(async () => {
-    // re-check every value at call time; {
     if (isSpinning || loadingPrompt || !prompt) return;
+    let newPrompt: Prompt;
+    try {
+      newPrompt = await getRandomPrompt();
+    } catch {
+      setIsSpinning(false);
+      return;
+    }
+
+    revealOpacity.setValue(0);
+    isRevealingRef.current = false;
+    setReelDone(false);
     setIsSpinning(true);
 
-    const newPrompt = await getRandomPrompt();
+    // Update displayText early so the hidden measuring layer can fit during spin.
+    setDisplayText(newPrompt.text);
 
-    // Build word reel frames: 14 random quotes then the final quote
-    // (quotes can be long; we simply show them truncated by Text numberOfLines)
+    // End the reel on the real quote so there is no random-word snap.
     const wordFrames = [...shuffleArr(creativeWords).slice(0, 14), newPrompt.text];
 
-    // All reels (word + terms) will spin at the same time, but we stagger
-    // their stop times by giving each a progressively longer duration.
-    // once every reel has finished we update the prompt and clear the flag.
+    // count expected reel completions: one word plus one per technique term
+    const totalReels = 1 + (newPrompt.terms?.length ?? 0);
     let completed = 0;
     const onDone = () => {
       completed++;
-      if (completed === 4) {
+      if (completed >= totalReels) {
         setPrompt(newPrompt);
-        setIsSpinning(false);
+        setReelDone(true);
       }
     };
 
-    // start all reels spinning at once, but stagger their stop times so they finish
-    // sequentially.  Use a base duration for the word reel and add a small offset for
-    // each term reel (250ms apart) so the slot‑machine effect reads “one by one”.
-    // word reel duration stays the same.  term reels maintain the same
-    // durations as before, but we give them more frames to travel so their
-    // **velocity** (distance / time) is higher.  This creates the perception of
-    // a faster spin while keeping the overall sequence length unchanged.
+    // same stagger/velocity constants as before
     const WORD_BASE = 1200;
     const TERM_BASE = 2000;
-    const TERM_STAGGER = 200; // ms between each term stopping
-    const TERM_VELOCITY = 2; // multiplier for number of random frames
-    const TERM_FRAME_COUNT = 10; // base number of random frames produced
+    const TERM_STAGGER = 200;
+    const TERM_VELOCITY = 2;
+    const TERM_FRAME_COUNT = 10;
 
-    wordReelRef.current?.spin(wordFrames, WORD_BASE, onDone);
+    if (wordReelRef.current) {
+      wordReelRef.current.spin(wordFrames, WORD_BASE, onDone);
+    } else {
+      onDone();
+    }
 
     newPrompt.terms.forEach((term, i) => {
-      // generate more frames for higher velocity; leave the final label at the end
       const termFrames = [
         ...shuffleArr(allTermLabels).slice(0, TERM_FRAME_COUNT * TERM_VELOCITY),
         term.label,
       ];
       const duration = TERM_BASE + i * TERM_STAGGER;
-      termReelRefs.current[i]?.spin(termFrames, duration, onDone);
+      const ref = termReelRefs.current[i];
+      if (ref) {
+        ref.spin(termFrames, duration, onDone);
+      } else {
+        onDone();
+      }
     });
-  }, [isSpinning, loadingPrompt, prompt]);
+  }, [isSpinning, loadingPrompt, prompt, revealOpacity]);
 
   const openTermDetail = useCallback((term: Term) => {
     setSelectedTerm(term);
@@ -317,20 +340,73 @@ export default function HomeScreen() {
     setShowSession(true);
   }, [prompt]);
 
-  // compute a font size that decreases for very long quotes so the card doesn't
-  // become absurdly tall.  This is a simple heuristics based on character count.
-  const quoteFontSize = React.useMemo(() => {
-    const txt = prompt?.text ?? '';
-    const len = txt.length;
-    if (len > 200) return 20;
-    if (len > 150) return 24;
-    if (len > 100) return 28;
-    return 32;
-  }, [prompt?.text]);
+  // Width of the text area inside the quote card, used by the off-screen measuring node.
+  // scrollContent paddingHorizontal + quoteTouchable paddingHorizontal on both sides.
+  const quoteTextWidth = React.useMemo(() => {
+    const outerPad = mobile ? Spacing.md : Spacing.lg;  // scrollContent horizontal pad
+    const innerPad = Spacing.lg;                         // quoteTouchable horizontal pad
+    return Math.max(100, width - 2 * outerPad - 2 * innerPad);
+  }, [width, mobile]);
 
-  // adjust line height relative to font size to avoid double spacing
+  // Start at a reasonable ceiling; the measuring node will shrink it down if needed.
+  const quoteBaseFontSize = React.useMemo(() => {
+    const len = displayText.length;
+    const widthScale = mobile ? Math.min(1.0, Math.max(0.75, width / 390)) : Math.min(1.2, Math.max(0.85, width / 1200));
+    const heightScale = quoteBoxHeight / (mobile ? 160 : 180);
+    let base = 30 * widthScale * heightScale;
+    if (len > 220) base *= 0.55;
+    else if (len > 180) base *= 0.62;
+    else if (len > 140) base *= 0.70;
+    else if (len > 100) base *= 0.80;
+    else if (len > 60) base *= 0.90;
+    const cap = mobile ? 34 : 38;
+    return Math.round(Math.max(14, Math.min(cap, base)));
+  }, [displayText, mobile, width, quoteBoxHeight]);
+
+  const quoteMinFontSize = mobile ? 9 : 11;
+  const [quoteFontSize, setQuoteFontSize] = useState(quoteBaseFontSize);
+
+  // Reset to base whenever quote text or viewport changes.
+  useEffect(() => {
+    setQuoteFontSize(quoteBaseFontSize);
+    setQuoteFitReady(false);
+  }, [quoteBaseFontSize]);
+
+  // Called by the off-screen measuring <Text> which has no height constraint.
+  // Its onLayout reports the TRUE natural text height, so we can detect overflow
+  // and shrink proportionally before the text is ever visible.
+  const onMeasureQuoteLayout = useCallback((e: any) => {
+    const h = e?.nativeEvent?.layout?.height ?? 0;
+    if (!h) return;
+    if (h > quoteBoxHeight && quoteFontSize > quoteMinFontSize) {
+      setQuoteFitReady(false);
+      const ratio = quoteBoxHeight / h;
+      const next = Math.max(quoteMinFontSize, Math.floor(quoteFontSize * ratio) - 1);
+      if (next < quoteFontSize) setQuoteFontSize(next);
+      return;
+    }
+    setQuoteFitReady(true);
+  }, [quoteFontSize, quoteBoxHeight, quoteMinFontSize]);
+
+  // Only reveal the static quote when both the reel and font-fit are done.
+  useEffect(() => {
+    if (!isSpinning || !reelDone || !quoteFitReady || isRevealingRef.current) return;
+    isRevealingRef.current = true;
+    Animated.timing(revealOpacity, {
+      toValue: 1,
+      duration: 140,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSpinning(false);
+      setReelDone(false);
+      isRevealingRef.current = false;
+    });
+  }, [isSpinning, reelDone, quoteFitReady, revealOpacity]);
+
+  // adjust line height relative to font size
   const quoteLineHeight = React.useMemo(() => {
-    return Math.round(quoteFontSize * 1.25);
+    return Math.round(quoteFontSize * 1.3);
   }, [quoteFontSize]);
 
   const handleSessionComplete = useCallback(
@@ -347,6 +423,22 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.bg} />
+
+      {/* Off-screen measuring node — unconstrained height, exact text width.
+          onLayout here reports the TRUE natural text height so we can fit
+          the font before the text becomes visible. Must live outside any
+          overflow:hidden or height-constrained ancestor. */}
+      <View
+        style={{ position: 'absolute', top: -9999, left: 0, width: quoteTextWidth, opacity: 0 }}
+        pointerEvents="none"
+      >
+        <Text
+          onLayout={onMeasureQuoteLayout}
+          style={[styles.quoteText, { fontSize: quoteFontSize, lineHeight: quoteLineHeight }]}
+        >
+          {displayText}
+        </Text>
+      </View>
 
       <View style={styles.content}>
         <ScrollView
@@ -403,41 +495,68 @@ export default function HomeScreen() {
 
           {/* Word reel display */}
           {loadingPrompt ? (
-            <View style={{ height: WORD_ROW_H, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ height: quoteBoxHeight, justifyContent: 'center', alignItems: 'center' }}>
               <ActivityIndicator />
             </View>
-          ) : isSpinning ? (
-            <TouchableOpacity
-              style={styles.wordReelWrapper}
-              onPress={() => {}}
-              activeOpacity={1}
-            >
-              <WordReel
-                ref={wordReelRef}
-                rowHeight={WORD_ROW_H}
-                textStyle={styles.wordText}
-                maxLines={2}
-                reverse
-              />
-            </TouchableOpacity>
           ) : (
-            // when not spinning show a static, multi-line, scaling quote
-            <TouchableOpacity
-              style={styles.quoteWrapper}
-              onPress={() => {
-                if (!prompt) return;
-                setShowQuote(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[styles.quoteText, { fontSize: quoteFontSize, lineHeight: quoteLineHeight }]}
-                adjustsFontSizeToFit
-                minimumFontScale={0.5}
+            // Both layers are always rendered so onLayout can pre-size the
+            // quote text while the reel is spinning.  We swap visibility with
+            // opacity so the text is measured (and font is fitted) before it
+            // becomes visible, eliminating the snap.
+            <View style={{ height: quoteBoxHeight }}>
+              {/* Static quote — crossfades in when spin + fitting are complete */}
+              <Animated.View
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { opacity: isSpinning ? revealOpacity : 1 },
+                ]}
               >
-                {prompt?.text}
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.quoteTouchable, StyleSheet.absoluteFillObject]}
+                  onPress={() => {
+                    if (!prompt || isSpinning) return;
+                    setShowQuote(true);
+                  }}
+                  activeOpacity={0.7}
+                  disabled={isSpinning}
+                >
+                  <View style={[styles.quoteWrapper, { height: quoteBoxHeight }]}>
+                    <Text
+                      style={[styles.quoteText, { fontSize: quoteFontSize, lineHeight: quoteLineHeight }]}
+                    >
+                      {displayText}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Reel — visible while spinning, hidden after */}
+              <Animated.View
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  {
+                    opacity: isSpinning
+                      ? revealOpacity.interpolate({ inputRange: [0, 1], outputRange: [1, 0] })
+                      : 0,
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <View
+                  style={[styles.quoteTouchable, StyleSheet.absoluteFillObject]}
+                >
+                  <View style={[styles.quoteWrapper, { height: quoteBoxHeight }]}>
+                    <WordReel
+                      ref={wordReelRef}
+                      rowHeight={quoteBoxHeight}
+                      textStyle={[styles.wordText, { fontSize: quoteFontSize, lineHeight: quoteLineHeight }]}
+                      maxLines={6}
+                      reverse
+                    />
+                  </View>
+                </View>
+              </Animated.View>
+            </View>
           )}
         </View>
 
@@ -515,6 +634,7 @@ export default function HomeScreen() {
         wordCount={sessionWordCount}
         writing={sessionWriting}
         prompt={sessionPrompt?.text ?? prompt?.text ?? ''}
+        quoteAuthor={sessionPrompt?.author ?? prompt?.author}
         terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
         image={sessionImage}
         onClose={() => setShowReflection(false)}
@@ -680,11 +800,14 @@ const styles = StyleSheet.create({
   },
 
   // when spinning we still use the reel; otherwise the static quote below
-  quoteWrapper: {
+  quoteTouchable: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
-    // allow the quote to expand freely; the CTA lives in a fixed footer so
-    // it will never be pushed off screen.
+  },
+  quoteWrapper: {
+    width: '100%',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   quoteText: {
     fontFamily: Font.serifBold,
@@ -698,8 +821,6 @@ const styles = StyleSheet.create({
     fontSize: 32,        // reduced size for better fit on small screens
     color: Colors.textPrimary,
     letterSpacing: 1,
-    // allow two lines but keep line height roughly original
-    lineHeight: WORD_ROW_H / 2,
   },
 
   //  Techniques

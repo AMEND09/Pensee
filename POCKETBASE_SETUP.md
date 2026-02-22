@@ -40,6 +40,7 @@ In the PocketBase Admin UI:
 | `bad`      | Text     |          |                                         |
 | `thoughts` | Text     |          |                                         |
 | `prompt`   | Text     |          | The quote prompt used for the session  |
+| `quoteAuthor` | Text  |          | Author of the quote prompt (optional) |
 | `terms`    | Text     |          | JSON string of technique terms          |
 | `image`    | Text     |          | URI or base64 of any scanned image      |
 
