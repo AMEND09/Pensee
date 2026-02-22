@@ -10,12 +10,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccountModal from '../../components/modals/account-modal';
+import ExportModal from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
 import StatsModal from '../../components/modals/stats-modal';
 import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term } from '../../utils/prompts';
 
 // 
@@ -192,6 +195,7 @@ export default function HomeScreen() {
   const [prompt, setPrompt] = useState<Prompt>(() => getDailyPrompt(new Date()));
   const [isSpinning, setIsSpinning] = useState(false);
   const today = new Date();
+  const { user } = useAuth();
 
   // Reel refs
   const wordReelRef = useRef<ReelRef>(null);
@@ -207,6 +211,8 @@ export default function HomeScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const [showTermDetail, setShowTermDetail] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
+  const [showAccount, setShowAccount] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
@@ -317,7 +323,14 @@ export default function HomeScreen() {
               onPress={() => setShowStats(true)}
               activeOpacity={0.75}
             >
-              <Text style={styles.statsBtnText}>Statistics</Text>
+              <Text style={styles.statsBtnText}>Stats</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.statsBtn, styles.statsBtnMargin]}
+              onPress={() => setShowAccount(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.statsBtnText}>{user ? user.name.split(' ')[0] : 'Account'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -399,7 +412,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <Text style={styles.sessionHint}>
-          A 10-minute timed writing session. The prompt stays visible throughout.
+          Write freely for ten minutes using today's creative prompt.
         </Text>
       </ScrollView>
 
@@ -420,6 +433,7 @@ export default function HomeScreen() {
         image={sessionImage}
         onClose={() => setShowReflection(false)}
         onSave={() => {}}
+        onExport={() => setShowExport(true)}
       />
 
       <StatsModal
@@ -436,6 +450,20 @@ export default function HomeScreen() {
         visible={showTermDetail}
         term={selectedTerm?.id ?? null}
         onClose={() => setShowTermDetail(false)}
+      />
+
+      <AccountModal
+        visible={showAccount}
+        onClose={() => setShowAccount(false)}
+      />
+
+      <ExportModal
+        visible={showExport}
+        onClose={() => setShowExport(false)}
+        prompt={sessionPrompt?.text ?? prompt.text}
+        terms={sessionPrompt?.terms ?? prompt.terms}
+        writing={sessionWriting}
+        wordCount={sessionWordCount}
       />
     </SafeAreaView>
   );
