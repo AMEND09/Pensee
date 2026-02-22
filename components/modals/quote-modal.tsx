@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 

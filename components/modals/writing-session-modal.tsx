@@ -1,24 +1,24 @@
 ﻿import { BookOpen, Camera, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '../../constants/theme';
 import { Prompt, Term } from '../../utils/prompts';
-import DictionaryModal from './dictionary-modal';
-import TermDetailModal from './term-detail-modal';
-import QuoteModal from './quote-modal';
 import ConfirmModal from './confirm-modal';
+import DictionaryModal from './dictionary-modal';
+import QuoteModal from './quote-modal';
+import TermDetailModal from './term-detail-modal';
 // rich-editor is only required on native platforms
 let RichEditor: any = null;
 let RichToolbar: any = null;

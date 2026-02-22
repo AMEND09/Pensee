@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import { Share2 } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Modal,
@@ -13,7 +14,6 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Session } from '../../utils/storage';
-import { Share2 } from 'lucide-react-native';
 // ExportModal will be required dynamically inside the component to avoid
 // potential bundler order issues on web.  See runtime check below.
 

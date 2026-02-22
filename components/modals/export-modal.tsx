@@ -1,18 +1,18 @@
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { Download, Share2, X } from 'lucide-react-native';
 import html2canvas from 'html2canvas';
+import { Download, Share2, X } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import { APP_URL } from '../../constants/config';

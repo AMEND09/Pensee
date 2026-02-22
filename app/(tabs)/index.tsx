@@ -1,5 +1,7 @@
-﻿import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+﻿import { BarChart, History, User as UserIcon } from 'lucide-react-native';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   ScrollView,
@@ -8,19 +10,17 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccountModal from '../../components/modals/account-modal';
 import ExportModal from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
+import QuoteModal from '../../components/modals/quote-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
 import StatsModal from '../../components/modals/stats-modal';
 import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
-import QuoteModal from '../../components/modals/quote-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import { History, BarChart, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term } from '../../utils/prompts';
 

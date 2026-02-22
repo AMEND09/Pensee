@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
-import { rhetoricalExamples, rhetoricalDefinitions } from '../../utils/prompts';
+import { rhetoricalDefinitions, rhetoricalExamples } from '../../utils/prompts';
 
 type Props = {
   term: string | null;

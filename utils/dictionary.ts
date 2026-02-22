@@ -22,7 +22,7 @@ export type OnlineEntry = {
  * Collects synonyms and antonyms across ALL meanings/definitions for richer results.
  * Returns null if the word is not found or if an error occurs.
  */
-import { rhetoricalExamples, rhetoricalDefinitions } from './prompts';
+import { rhetoricalDefinitions, rhetoricalExamples } from './prompts';
 
 export async function fetchOnlineDefinition(term: string): Promise<OnlineEntry | null> {
   // if the term is one of the predefined rhetorical devices, return a
