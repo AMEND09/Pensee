@@ -46,6 +46,10 @@ function SignInForm({
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // legal links
+  const openPrivacy = () => Linking.openURL(PRIVACY_POLICY_URL);
+  const openTerms = () => Linking.openURL(TERMS_URL);
+
   const handleEmail = async () => {
     if (!email.trim() || !password) {
       Alert.alert('Missing fields', 'Please enter your email and password.');
@@ -138,6 +142,12 @@ function SignInForm({
         )}
       </TouchableOpacity>
 
+      <Text style={styles.disclaimerText}>
+        By signing in you agree to our{' '}
+        <Text style={styles.linkAccent} onPress={openTerms}>Terms</Text> and{' '}
+        <Text style={styles.linkAccent} onPress={openPrivacy}>Privacy Policy</Text>.
+      </Text>
+
       <TouchableOpacity style={styles.linkRow} onPress={onSignUp}>
         <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkAccent}>Create one</Text></Text>
       </TouchableOpacity>
@@ -161,6 +171,10 @@ function SignUpForm({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // legal links
+  const openPrivacy = () => Linking.openURL(PRIVACY_POLICY_URL);
+  const openTerms = () => Linking.openURL(TERMS_URL);
 
   const handleCreate = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -267,6 +281,12 @@ function SignUpForm({
           <Text style={styles.primaryBtnText}>Create Account</Text>
         )}
       </TouchableOpacity>
+
+      <Text style={styles.disclaimerText}>
+        By creating an account you agree to our{' '}
+        <Text style={styles.linkAccent} onPress={openTerms}>Terms</Text> and{' '}
+        <Text style={styles.linkAccent} onPress={openPrivacy}>Privacy Policy</Text>.
+      </Text>
 
       <TouchableOpacity style={styles.linkRow} onPress={onSignIn}>
         <Text style={styles.linkText}>Already have an account? <Text style={styles.linkAccent}>Sign in</Text></Text>
@@ -940,6 +960,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     textDecorationLine: 'underline',
+  },
+  disclaimerText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: Spacing.md,
   },
   legalSep: {
     fontFamily: Font.serif,

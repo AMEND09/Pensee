@@ -36,6 +36,26 @@ if (fs.existsSync(landingPage)) {
   console.warn('prepare-web: root index.html not found, landing page missing');
 }
 
+// copy standalone legal HTML pages to dist root so they're served at /privacy and /terms
+['privacy.html', 'terms.html'].forEach((name) => {
+  const src = path.join(root, name);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, path.join(dist, name.replace('.html', '') + '.html'));
+    console.log(`prepare-web: copied ${name} to dist`);
+  } else {
+    console.warn(`prepare-web: ${name} not found, skipping`);
+  }
+});
+
+// also copy legal markdown files so they're served alongside the app
+['privacy-policy.md', 'terms-and-conditions.md'].forEach((name) => {
+  const src = path.join(root, name);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, path.join(dist, name));
+    fs.copyFileSync(src, path.join(webDir, name));
+  }
+});
+
 // Rewrite root-relative asset paths in the app's index.html.
 // Expo generates /_expo/... and /assets/... but the app is served from /web,
 // so the actual files live at /web/_expo/... and /web/assets/...
