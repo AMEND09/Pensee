@@ -1,5 +1,5 @@
 ﻿
-import { BarChart, History, User as UserIcon, Flame } from 'lucide-react-native';
+import { Flame, History, User as UserIcon } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,8 +25,7 @@ import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
-import { Stats } from '../../utils/storage';
-import { getStats } from '../../utils/storage';
+import { getStats, Stats } from '../../utils/storage';
 
 // 
 // Constants

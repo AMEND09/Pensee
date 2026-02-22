@@ -1,15 +1,15 @@
 ﻿import React, { useEffect, useState } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  TouchableOpacity,
-  ActivityIndicator,
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Stats } from '../../utils/storage';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { Stats } from '../../utils/storage';
 
 type Props = {
   visible: boolean;
