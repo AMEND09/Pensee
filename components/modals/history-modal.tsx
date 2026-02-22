@@ -408,6 +408,7 @@ export default function HistoryModal({
         writing={shareSession?.writing ?? ''}
         wordCount={shareSession?.wordCount ?? 0}
       />
+      {/* quoteAuthor is not stored on Session, so it's omitted here */}
       </SafeAreaView>
     </Modal>
   );

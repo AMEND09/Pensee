@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,7 +23,7 @@ import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
-import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term } from '../../utils/prompts';
+import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, Term, rhetoricalDefinitions } from '../../utils/prompts';
 
 // 
 // Constants
@@ -220,6 +221,11 @@ export default function HomeScreen() {
   const today = new Date();
   const { user } = useAuth();
 
+  const { width, height } = useWindowDimensions();
+  const mobile = width < 600;
+  const horizontalPadding = mobile ? Spacing.md : Spacing.lg;
+  const bottomPadding = mobile ? Spacing.xs : Spacing.lg * 5;
+
   // Reel refs
   const wordReelRef = useRef<ReelRef>(null);
   const termReelRefs = useRef<(ReelRef | null)[]>([null, null, null]);
@@ -282,8 +288,8 @@ export default function HomeScreen() {
     // durations as before, but we give them more frames to travel so their
     // **velocity** (distance / time) is higher.  This creates the perception of
     // a faster spin while keeping the overall sequence length unchanged.
-    const WORD_BASE = 1700;
-    const TERM_BASE = 1200;
+    const WORD_BASE = 1200;
+    const TERM_BASE = 2000;
     const TERM_STAGGER = 200; // ms between each term stopping
     const TERM_VELOCITY = 2; // multiplier for number of random frames
     const TERM_FRAME_COUNT = 10; // base number of random frames produced
@@ -311,6 +317,22 @@ export default function HomeScreen() {
     setShowSession(true);
   }, [prompt]);
 
+  // compute a font size that decreases for very long quotes so the card doesn't
+  // become absurdly tall.  This is a simple heuristics based on character count.
+  const quoteFontSize = React.useMemo(() => {
+    const txt = prompt?.text ?? '';
+    const len = txt.length;
+    if (len > 200) return 20;
+    if (len > 150) return 24;
+    if (len > 100) return 28;
+    return 32;
+  }, [prompt?.text]);
+
+  // adjust line height relative to font size to avoid double spacing
+  const quoteLineHeight = React.useMemo(() => {
+    return Math.round(quoteFontSize * 1.25);
+  }, [quoteFontSize]);
+
   const handleSessionComplete = useCallback(
     (writing: string, wordCount: number, scanImage?: string) => {
       setSessionWriting(writing);
@@ -326,11 +348,12 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.bg} />
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.content}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding, paddingBottom: bottomPadding }]}
+          showsVerticalScrollIndicator={false}
+        >
         {/*  App Header  */}
         <View style={styles.appHeader}>
           <View>
@@ -383,14 +406,11 @@ export default function HomeScreen() {
             <View style={{ height: WORD_ROW_H, justifyContent: 'center', alignItems: 'center' }}>
               <ActivityIndicator />
             </View>
-          ) : (
+          ) : isSpinning ? (
             <TouchableOpacity
               style={styles.wordReelWrapper}
-              onPress={() => {
-                if (isSpinning || !prompt) return;
-                setShowQuote(true);
-              }}
-              activeOpacity={isSpinning ? 1 : 0.7}
+              onPress={() => {}}
+              activeOpacity={1}
             >
               <WordReel
                 ref={wordReelRef}
@@ -399,6 +419,24 @@ export default function HomeScreen() {
                 maxLines={2}
                 reverse
               />
+            </TouchableOpacity>
+          ) : (
+            // when not spinning show a static, multi-line, scaling quote
+            <TouchableOpacity
+              style={styles.quoteWrapper}
+              onPress={() => {
+                if (!prompt) return;
+                setShowQuote(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[styles.quoteText, { fontSize: quoteFontSize, lineHeight: quoteLineHeight }]}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+              >
+                {prompt?.text}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -419,7 +457,14 @@ export default function HomeScreen() {
                 onPress={() => !isSpinning && openTermDetail(term)}
                 activeOpacity={isSpinning ? 1 : 0.7}
               >
-                <Text style={styles.termChipI}>i</Text>
+                <Text
+              style={[
+                styles.termChipI,
+                { color: Object.prototype.hasOwnProperty.call(rhetoricalDefinitions, term.id) ? Colors.accent : Colors.textSecondary },
+              ]}
+            >
+              {Object.prototype.hasOwnProperty.call(rhetoricalDefinitions, term.id) ? 'R' : 'V'}
+            </Text>
                 <WordReel
                   ref={(r) => { termReelRefs.current[i] = r; }}
                   rowHeight={TERM_ROW_H}
@@ -439,19 +484,23 @@ export default function HomeScreen() {
           <View style={styles.encouragementLine} />
         </View>
 
-        {/*  CTA  */}
-        <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={handleBeginSession}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.ctaButtonText}>Begin Today's Challenge</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.sessionHint}>
-          Write freely for ten minutes using today's creative prompt.
-        </Text>
       </ScrollView>
+
+        {/*  fixed footer with CTA so quote can grow without pushing it off screen */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.ctaButton}
+            onPress={handleBeginSession}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.ctaButtonText}>Begin Today's Challenge</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.sessionHint}>
+            Write freely for ten minutes using today's creative prompt.
+          </Text>
+        </View>
+      </View>
 
       {/*  Modals  */}
       <WritingSessionModal
@@ -504,6 +553,7 @@ export default function HomeScreen() {
         visible={showExport}
         onClose={() => setShowExport(false)}
         prompt={sessionPrompt?.text ?? prompt?.text ?? ''}
+        quoteAuthor={sessionPrompt?.author ?? prompt?.author}
         terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
         writing={sessionWriting}
         wordCount={sessionWordCount}
@@ -529,9 +579,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
+    paddingHorizontal: 0,
   },
   headerButtons: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   statsBtnMargin: { marginLeft: Spacing.md },
@@ -540,12 +590,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     color: Colors.textPrimary,
     letterSpacing: 1.5,
+    marginBottom: 2,
   },
   appDate: {
     fontFamily: Font.serif,
     fontSize: 12,
     color: Colors.textMuted,
-    marginTop: 2,
     letterSpacing: 0.3,
   },
   statsBtn: {
@@ -553,7 +603,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs,
     backgroundColor: Colors.cardBg,
     marginTop: 4,
   },
@@ -583,7 +633,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   cardLabel: {
     fontFamily: Font.serif,
@@ -616,10 +666,32 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  // layout helpers for new structure
+  content: { flex: 1 },
+  footer: {
+    padding: Spacing.lg,
+    backgroundColor: Colors.bg,
+  },
+
   //  Word reel
   wordReelWrapper: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
+  },
+
+  // when spinning we still use the reel; otherwise the static quote below
+  quoteWrapper: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    // allow the quote to expand freely; the CTA lives in a fixed footer so
+    // it will never be pushed off screen.
+  },
+  quoteText: {
+    fontFamily: Font.serifBold,
+    fontSize: 32,
+    color: Colors.textPrimary,
+    letterSpacing: 1,
+    // lineHeight now calculated per-font-size
   },
   wordText: {
     fontFamily: Font.serifBold,
@@ -654,7 +726,7 @@ const styles = StyleSheet.create({
   termChipI: {
     fontFamily: Font.serifItalic,
     fontSize: 12,
-    color: Colors.accent,
+    // color is set inline depending on type (rhetorical/vocab)
     fontStyle: 'italic',
     lineHeight: TERM_ROW_H,
   },

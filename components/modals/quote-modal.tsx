@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 
@@ -24,10 +24,16 @@ export default function QuoteModal({ visible, quote, author, onClose }: Props) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
-          <View style={styles.content}>
-            <Text style={styles.quote}>{quote}</Text>
+          <ScrollView style={styles.content}>
+            <Text
+              style={styles.quote}
+              adjustsFontSizeToFit
+              minimumFontScale={0.5}
+            >
+              {quote}
+            </Text>
             {author ? <Text style={styles.author}>— {author}</Text> : null}
-          </View>
+          </ScrollView>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <Text style={styles.closeBtnText}>Done</Text>
           </TouchableOpacity>
@@ -69,6 +75,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.textPrimary,
     marginBottom: Spacing.md,
+    // wrap and allow multiple lines
+    flexShrink: 1,
   },
   author: {
     fontFamily: Font.serifItalic,

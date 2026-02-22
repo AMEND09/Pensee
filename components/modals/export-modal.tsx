@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import html2canvas from 'html2canvas';
@@ -9,6 +10,7 @@ import {
     Modal,
     Platform,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -22,10 +24,13 @@ import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
+export type CardTemplate = 'text-focus' | 'quote-focus' | 'quote-only';
+
 type Props = {
   visible: boolean;
   onClose: () => void;
   prompt: string;
+  quoteAuthor?: string;
   terms?: { id: string; label: string }[];
   writing: string;
   wordCount: number;
@@ -44,6 +49,16 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+/** Scale a prompt font size down based on its character length */
+function promptFontSize(text: string, base: number): number {
+  const len = text.length;
+  if (len <= 40) return base;
+  if (len <= 80) return Math.round(base * 0.82);
+  if (len <= 130) return Math.round(base * 0.68);
+  if (len <= 180) return Math.round(base * 0.56);
+  return Math.round(base * 0.46);
+}
+
 /** Return a short excerpt of the writing for display on the card */
 function excerpt(writing: string, maxChars = 220): string {
   const plain = stripHtml(writing).trim();
@@ -56,74 +71,133 @@ function excerpt(writing: string, maxChars = 220): string {
 // ExportCard — the styled view that gets captured
 // ─────────────────────────────────────────────────────────────────────────────
 
+function CardFooter() {
+  return (
+    <View style={card.footer}>
+      <View style={card.footerLine} />
+      <Text style={card.footerUrl}>{APP_URL.replace('https://', '')}</Text>
+      <View style={card.footerLine} />
+    </View>
+  );
+}
+
+function ChipRow({ terms, small }: { terms?: { id: string; label: string }[]; small?: boolean }) {
+  if (!terms || terms.length === 0) return null;
+  return (
+    <View style={[card.chipsRow, small && card.chipsRowSmall]}>
+      {terms.map((t) => (
+        <View key={t.id} style={[card.chip, small && card.chipSmall]}>
+          <Text style={[card.chipText, small && card.chipTextSmall]}>{t.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function ExportCard({
   prompt,
+  quoteAuthor,
   terms,
   writing,
   wordCount,
+  template,
 }: {
   prompt: string;
+  quoteAuthor?: string;
   terms?: { id: string; label: string }[];
   writing: string;
   wordCount: number;
+  template: CardTemplate;
 }) {
+  // ── Text Focus ────────────────────────────────────────────────────────────
+  if (template === 'text-focus') {
+    const text = excerpt(writing, 320);
+    const writingFontSize = text.length > 240 ? 12 : 14;
+    const pfs = promptFontSize(prompt, 16); // smaller base size
+    return (
+      <View style={card.container} nativeID="export-card">
+        {/* Compact header: prompt + chips (no accent line, smaller spacing) */}
+        <View style={card.textFocusHeader}>
+          <Text style={[card.promptWordSmall, { fontSize: pfs, lineHeight: pfs * 1.3, marginBottom: 4 }]}>
+            {prompt}
+          </Text>
+          <ChipRow terms={terms} small />
+        </View>
+
+        {/* Divider */}
+        <View style={card.divider} />
+
+        {/* Writing — the star */}
+        {text ? (
+          <Text style={[card.writingTextLarge, { fontSize: writingFontSize }]}>{text}</Text>
+        ) : null}
+
+        {/* Word count */}
+        <Text style={card.wordCount}>{wordCount} words</Text>
+
+        <CardFooter />
+      </View>
+    );
+  }
+
+  // ── Quote Only ────────────────────────────────────────────────────────────
+  if (template === 'quote-only') {
+    const pfs = promptFontSize(prompt, 42);
+    return (
+      <View style={[card.container, card.containerCentered]} nativeID="export-card">
+        <View style={card.accentLine} />
+        <Text style={card.ornamentLarge}>✦</Text>
+
+        <Text style={[card.promptWordLarge, { fontSize: pfs, lineHeight: pfs * 1.25 }]}>
+          {prompt}
+        </Text>
+
+        <ChipRow terms={terms} />
+
+        {quoteAuthor ? (
+          <Text style={card.authorText}>— {quoteAuthor}</Text>
+        ) : null}
+
+        <CardFooter />
+      </View>
+    );
+  }
+
+  // ── Quote Focus (default) ─────────────────────────────────────────────────
   const text = excerpt(writing);
-
-  // shrink writing font size if the excerpt is particularly long
   const writingFontSize = text.length > 160 ? 12 : 14;
-
+  const pfs = promptFontSize(prompt, 36);
   return (
-    <View style={[card.container]} nativeID="export-card">
-      {/* Decorative top accent line */}
+    <View style={card.container} nativeID="export-card">
       <View style={card.accentLine} />
-
-      {/* Ornament */}
       <Text style={card.ornament}>✦</Text>
 
-      {/* Prompt word (allow two lines, never truncate) */}
-      <Text style={card.promptWord} numberOfLines={2} ellipsizeMode="tail">
+      <Text style={[card.promptWord, { fontSize: pfs, lineHeight: pfs * 1.22 }]}>
         {prompt}
       </Text>
 
-      {/* Technique chips */}
-      {terms && terms.length > 0 && (
-        <View style={card.chipsRow}>
-          {terms.map((t) => (
-            <View key={t.id} style={card.chip}>
-              <Text style={card.chipText}>{t.label}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      <ChipRow terms={terms} />
 
-      {/* Divider */}
       <View style={card.divider} />
 
-      {/* Writing excerpt */}
       {text ? (
         <Text style={[card.writingText, { fontSize: writingFontSize }]}>{text}</Text>
       ) : null}
 
-      {/* Word count */}
       <Text style={card.wordCount}>{wordCount} words</Text>
 
-      {/* Bottom ornament + URL */}
-      <View style={card.footer}>
-        <View style={card.footerLine} />
-        <Text style={card.footerUrl}>{APP_URL.replace('https://', '')}</Text>
-        <View style={card.footerLine} />
-      </View>
+      <CardFooter />
     </View>
   );
 }
 
 const card = StyleSheet.create({
+  // ── Shared container ────────────────────────────────────────────────────
   container: {
     backgroundColor: '#fdf8f2',
     borderRadius: Radius.lg,
-    padding: 28,
-    width: 340,
-    height: '100%',        // fill parent aspect-ratio box
+    padding: 22,
+    flex: 1,             // fill the cardBackground box — fixes cut-off & 4:5
     justifyContent: 'space-between',
     shadowColor: 'rgba(61,43,31,0.18)',
     shadowOffset: { width: 0, height: 4 },
@@ -133,6 +207,12 @@ const card = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e4d0be',
   },
+  containerCentered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Accent lines ────────────────────────────────────────────────────────
   accentLine: {
     height: 3,
     backgroundColor: Colors.accent,
@@ -141,6 +221,16 @@ const card = StyleSheet.create({
     width: 40,
     alignSelf: 'center',
   },
+  accentLineSmall: {
+    height: 2,
+    backgroundColor: Colors.accent,
+    borderRadius: 2,
+    marginBottom: 10,
+    width: 28,
+    alignSelf: 'center',
+  },
+
+  // ── Ornaments ───────────────────────────────────────────────────────────
   ornament: {
     fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 14,
@@ -149,6 +239,16 @@ const card = StyleSheet.create({
     marginBottom: 8,
     letterSpacing: 6,
   },
+  ornamentLarge: {
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
+    fontSize: 20,
+    color: Colors.accent,
+    textAlign: 'center',
+    marginBottom: 16,
+    letterSpacing: 8,
+  },
+
+  // ── Prompt words ────────────────────────────────────────────────────────
   promptWord: {
     fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
     fontSize: 36,
@@ -158,12 +258,36 @@ const card = StyleSheet.create({
     lineHeight: 44,
     marginBottom: 12,
   },
+  promptWordSmall: {
+    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontSize: 18,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    letterSpacing: 1,
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  promptWordLarge: {
+    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontSize: 42,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: 1.5,
+    lineHeight: 52,
+    marginBottom: 16,
+  },
+
+  // ── Chips ───────────────────────────────────────────────────────────────
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 6,
     marginBottom: 16,
+  },
+  chipsRowSmall: {
+    gap: 4,
+    marginBottom: 10,
   },
   chip: {
     backgroundColor: Colors.accentMuted,
@@ -173,16 +297,33 @@ const card = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.chipBorder,
   },
+  chipSmall: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
   chipText: {
     fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 11,
     color: Colors.accent,
   },
+  chipTextSmall: {
+    fontSize: 9,
+  },
+
+  // ── Text focus header ───────────────────────────────────────────────────
+  textFocusHeader: {
+    alignItems: 'center',
+    paddingTop: 0,
+  },
+
+  // ── Divider ─────────────────────────────────────────────────────────────
   divider: {
     height: 1,
     backgroundColor: Colors.divider,
     marginVertical: 16,
   },
+
+  // ── Writing text ────────────────────────────────────────────────────────
   writingText: {
     fontFamily: Platform.select({ ios: 'Georgia-Italic', default: 'serif' }),
     fontSize: 14,
@@ -192,6 +333,30 @@ const card = StyleSheet.create({
     marginBottom: 12,
     fontStyle: 'italic',
   },
+  writingTextLarge: {
+    fontFamily: Platform.select({ ios: 'Georgia-Italic', default: 'serif' }),
+    fontSize: 14,
+    color: Colors.textPrimary,
+    lineHeight: 26,
+    textAlign: 'left',
+    marginBottom: 12,
+    fontStyle: 'italic',
+    flex: 1,
+  },
+
+  // ── Author ──────────────────────────────────────────────────────────────
+  authorText: {
+    fontFamily: Platform.select({ ios: 'Georgia-Italic', default: 'serif' }),
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    letterSpacing: 0.4,
+    marginTop: 4,
+    marginBottom: 20,
+  },
+
+  // ── Word count ──────────────────────────────────────────────────────────
   wordCount: {
     fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 11,
@@ -200,6 +365,8 @@ const card = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 16,
   },
+
+  // ── Footer ──────────────────────────────────────────────────────────────
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -223,16 +390,24 @@ const card = StyleSheet.create({
 // ExportModal
 // ─────────────────────────────────────────────────────────────────────────────
 
+const TEMPLATES: { key: CardTemplate; label: string }[] = [
+  { key: 'quote-focus', label: 'Quote' },
+  { key: 'text-focus', label: 'Writing' },
+  { key: 'quote-only', label: 'Minimal' },
+];
+
 export default function ExportModal({
   visible,
   onClose,
   prompt,
+  quoteAuthor,
   terms,
   writing,
   wordCount,
 }: Props) {
   const viewShotRef = useRef<ViewShot | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [template, setTemplate] = useState<CardTemplate>('quote-focus');
 
   const captureImage = async (): Promise<string | null> => {
     if (Platform.OS === 'web') {
@@ -311,7 +486,13 @@ export default function ExportModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.container} onPress={() => {}}>
+        {/* use ScrollView so tall modals are scrollable; contentContainer
+            padding gives extra breathing room top/bottom */}
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingVertical: Spacing.lg }}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Header */}
           <View style={styles.header}>
             <View>
@@ -325,6 +506,30 @@ export default function ExportModal({
 
           <View style={styles.divider} />
 
+          {/* Template selector */}
+          <View style={styles.templateRow}>
+            {TEMPLATES.map((t) => (
+              <TouchableOpacity
+                key={t.key}
+                style={[
+                  styles.templateBtn,
+                  template === t.key && styles.templateBtnActive,
+                ]}
+                onPress={() => setTemplate(t.key)}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.templateBtnText,
+                    template === t.key && styles.templateBtnTextActive,
+                  ]}
+                >
+                  {t.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {/* Preview */}
           <View style={styles.previewArea}>
             <ViewShot
@@ -336,9 +541,11 @@ export default function ExportModal({
               <View style={styles.cardBackground}>
                 <ExportCard
                   prompt={prompt}
+                  quoteAuthor={quoteAuthor}
                   terms={terms}
                   writing={writing}
                   wordCount={wordCount}
+                  template={template}
                 />
               </View>
             </ViewShot>
@@ -374,7 +581,7 @@ export default function ExportModal({
               </TouchableOpacity>
             )}
           </View>
-        </Pressable>
+        </ScrollView>
       </Pressable>
     </Modal>
   );
@@ -405,6 +612,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 24,
     elevation: 16,
+    paddingVertical: Spacing.lg, // give breathing room top/bottom
+    maxHeight: ('90vh' as unknown) as number, // cast to satisfy RN types
   },
   header: {
     flexDirection: 'row',
@@ -442,12 +651,13 @@ const styles = StyleSheet.create({
   viewShot: {
     borderRadius: Radius.lg,
     overflow: 'hidden',
-    width: 340,
-    aspectRatio: 4 / 5, // lock to 4:5 ratio
+    width: '100%',       // fill previewArea width (respects modal padding)
+    aspectRatio: 4 / 5, // enforces 4:5 on the captured area
   },
   cardBackground: {
+    flex: 1,             // fill viewShot so card.container also fills it
     backgroundColor: '#f5ede0',
-    padding: 20,
+    padding: 14,
     borderRadius: Radius.lg,
   },
   actions: {
@@ -490,4 +700,36 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   disabled: { opacity: 0.55 },
+
+  // Template selector
+  templateRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  templateBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.cardBg,
+  },
+  templateBtnActive: {
+    backgroundColor: Colors.accentMuted,
+    borderColor: Colors.accent,
+  },
+  templateBtnText: {
+    fontFamily: Font.serif,
+    fontSize: 13,
+    color: Colors.textMuted,
+    letterSpacing: 0.4,
+  },
+  templateBtnTextActive: {
+    color: Colors.accent,
+    fontFamily: Font.serifBold,
+  },
 });

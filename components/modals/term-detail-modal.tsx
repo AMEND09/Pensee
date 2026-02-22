@@ -40,6 +40,13 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
     }
   }, [term]);
 
+  // determine offline label when we don't have an onlineEntry
+  const offlineType: string | null = term
+    ? term in rhetoricalDefinitions
+      ? 'rhetorical device'
+      : 'vocabulary'
+    : null;
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
@@ -47,7 +54,11 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              {onlineEntry && <Text style={styles.typeLabel}>{onlineEntry.type}</Text>}
+              {onlineEntry ? (
+                <Text style={styles.typeLabel}>{onlineEntry.type}</Text>
+              ) : (
+                offlineType && <Text style={styles.typeLabel}>{offlineType}</Text>
+              )}
               <Text style={styles.term}>{term}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
@@ -78,6 +89,7 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
             ) {
               const examples = (rhetoricalExamples && rhetoricalExamples[term]) || [];
               const definition = (rhetoricalDefinitions && rhetoricalDefinitions[term]) || '';
+              // render definition in dictionary style
               return (
                 <ScrollView
                   style={styles.scroll}
@@ -85,8 +97,9 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
                   showsVerticalScrollIndicator={false}
                 >
                   {definition && (
-                    <View style={styles.definitionBlock}>
-                      <Text style={styles.definitionText}>{definition}</Text>
+                    <View style={styles.meaningBlock}>
+                      <Text style={styles.meaningHeader}>definition</Text>
+                      <Text style={styles.definitionText}>{`1. ${definition}`}</Text>
                     </View>
                   )}
                   {examples.length > 0 && (
@@ -257,7 +270,7 @@ const styles = StyleSheet.create({
     borderLeftColor: Colors.accent,
     paddingLeft: Spacing.md,
     paddingVertical: Spacing.sm,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md, // tighter spacing between examples
     backgroundColor: Colors.accentMuted,
     borderRadius: Radius.sm,
   },
