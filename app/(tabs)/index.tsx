@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   },
   wordText: {
     fontFamily: Font.serifBold,
-    fontSize: 38,
+    fontSize: 32,        // reduced size for better fit on small screens
     color: Colors.textPrimary,
     letterSpacing: 1,
     // allow two lines but keep line height roughly original

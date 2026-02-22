@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import pb, { pbReady } from './pocketbase';
@@ -88,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'google',
           code,
           stored || '',
-          window.location.origin,
+          window.location.origin + '/web',
           { name: '', avatarURL: '' },
         );
       } catch (err) {
@@ -131,8 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     const redirectUrl =
       Platform.OS === 'web'
-        ? window.location.origin
-        : AuthSession.makeRedirectUri({ scheme: 'pensee', useProxy: true });
+        ? window.location.origin + '/web'
+        : AuthSession.makeRedirectUri({ scheme: 'pensee' });
 
     // fetch provider info (includes PKCE verifier)
     const authMethods = await pb.collection('users').listAuthMethods();

@@ -51,10 +51,12 @@ if (fs.existsSync(webIndex)) {
   const urlShim = `<script>
     (function(){
       var p = window.location.pathname;
+      var qs = window.location.search;
+      var hash = window.location.hash;
       if (p === '/web' || p === '/web/') {
-        history.replaceState(null, '', '/');
+        history.replaceState(null, '', '/' + qs + hash);
       } else if (p.startsWith('/web/')) {
-        history.replaceState(null, '', p.slice(4) || '/');
+        history.replaceState(null, '', (p.slice(4) || '/') + qs + hash);
       }
     })();
   </script>`;
