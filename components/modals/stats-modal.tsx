@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { getStats, Stats } from '../../utils/storage';
+import { Stats } from '../../utils/storage';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
+  stats: Stats | null;
+  loading: boolean;
 };
 
 function StatBlock({
@@ -34,18 +36,18 @@ function StatBlock({
   );
 }
 
-export default function StatsModal({ visible, onClose }: Props) {
+export default function StatsModal({ visible, onClose, stats: propStats, loading: propLoading }: Props) {
+  // stats and loading are supplied by parent
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // sync local copies with props to allow layout logic below unchanged
   useEffect(() => {
-    if (visible) {
-      setLoading(true);
-      getStats()
-        .then(setStats)
-        .finally(() => setLoading(false));
-    }
-  }, [visible]);
+    setStats(propStats);
+  }, [propStats]);
+  useEffect(() => {
+    setLoading(propLoading);
+  }, [propLoading]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

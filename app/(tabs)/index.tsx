@@ -1,4 +1,5 @@
-﻿import { BarChart, History, User as UserIcon } from 'lucide-react-native';
+﻿
+import { BarChart, History, User as UserIcon, Flame } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,6 +25,8 @@ import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
+import { Stats } from '../../utils/storage';
+import { getStats } from '../../utils/storage';
 
 // 
 // Constants
@@ -249,12 +252,15 @@ export default function HomeScreen() {
   const [showSession, setShowSession] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTermDetail, setShowTermDetail] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const [showQuote, setShowQuote] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
@@ -269,6 +275,25 @@ export default function HomeScreen() {
       termReelRefs.current[i]?.show(term.label);
     });
   }, [prompt]);
+
+  // load streak & stats when app starts and whenever stats modal opens
+  const refreshStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const s = await getStats();
+      setStats(s);
+      setStreak(s.streak);
+    } catch {}
+    setStatsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    refreshStats();
+  }, [refreshStats]);
+
+  useEffect(() => {
+    if (showStats) refreshStats();
+  }, [showStats, refreshStats]);
 
   const handleShuffle = useCallback(async () => {
     if (isSpinning || loadingPrompt || !prompt) return;
@@ -453,19 +478,24 @@ export default function HomeScreen() {
             <Text style={styles.appDate}>{formatDate(today)}</Text>
           </View>
           <View style={styles.headerButtons}>
+            {/* streak counter button, opens stats */}
             <TouchableOpacity
               style={styles.statsBtn}
+              onPress={() => setShowStats(true)}
+              activeOpacity={0.75}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Flame size={16} color={Colors.textSecondary} />
+                <Text style={[styles.statsBtnText, { fontSize: 12 }]}>{streak}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.statsBtn, styles.statsBtnMargin]}
               onPress={() => setShowHistory(true)}
               activeOpacity={0.75}
             >
               <History size={16} color={Colors.textSecondary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.statsBtn, styles.statsBtnMargin]}
-              onPress={() => setShowStats(true)}
-              activeOpacity={0.75}
-            >
-              <BarChart size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.statsBtn, styles.statsBtnMargin]}
@@ -645,6 +675,8 @@ export default function HomeScreen() {
       <StatsModal
         visible={showStats}
         onClose={() => setShowStats(false)}
+        stats={stats}
+        loading={statsLoading}
       />
 
       <HistoryModal
