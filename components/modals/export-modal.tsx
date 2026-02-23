@@ -124,8 +124,9 @@ function ExportCard({
 }) {
   // ── Text Focus ────────────────────────────────────────────────────────────
   if (template === 'text-focus') {
-    const text = excerpt(writing, 320);
-    const writingFontSize = text.length > 240 ? 12 : 14;
+    const text = stripHtml(writing).trim();
+    const writingFontSize =
+      text.length > 1200 ? 10 : text.length > 900 ? 11 : text.length > 650 ? 12 : 13;
     const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 16);
     return (
       <View style={card.container} nativeID="export-card">
@@ -154,7 +155,18 @@ function ExportCard({
 
         {/* Writing — the star */}
         {text ? (
-          <Text allowFontScaling={false} style={[card.writingTextLarge, { fontSize: writingFontSize }]}>{text}</Text>
+          <Text
+            allowFontScaling={false}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+            numberOfLines={12}
+            style={[
+              card.writingTextLarge,
+              { fontSize: writingFontSize, lineHeight: Math.round(writingFontSize * 1.65) },
+            ]}
+          >
+            {text}
+          </Text>
         ) : null}
 
         {/* Word count */}
@@ -206,7 +218,7 @@ function ExportCard({
   // ── Quote Focus (default) ─────────────────────────────────────────────────
   const text = excerpt(writing);
   const writingFontSize = text.length > 160 ? 12 : 14;
-  const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 36);
+  const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 34);
   return (
     <View style={card.container} nativeID="export-card">
       <View style={card.accentLine} />
@@ -339,8 +351,8 @@ const card = StyleSheet.create({
   },
   quotePromptWrapper: {
     width: '100%',
-    minHeight: 120,
-    maxHeight: 260,
+    minHeight: 88,
+    maxHeight: 210,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -494,7 +506,7 @@ export default function ExportModal({
   // dynamic font size used by the quote-only (minimal) template. we start
   // with the heuristic base size and then shrink further if the rendered text
   // does not fit the available vertical space.
-  const initialBase = template === 'text-focus' ? 16 : template === 'quote-focus' ? 36 : 42;
+  const initialBase = template === 'text-focus' ? 16 : template === 'quote-focus' ? 34 : 40;
   const [promptFont, setPromptFont] = useState(() => promptFontSize(prompt, initialBase));
   const [wrapperHeight, setWrapperHeight] = useState(0);
   const [textHeight, setTextHeight] = useState(0);
@@ -505,7 +517,7 @@ export default function ExportModal({
 
   // reset font whenever the prompt or template changes
   useEffect(() => {
-    const base = template === 'text-focus' ? 16 : template === 'quote-focus' ? 36 : 42;
+    const base = template === 'text-focus' ? 16 : template === 'quote-focus' ? 34 : 40;
     setPromptFont(promptFontSize(prompt, base));
     setWrapperHeight(0);
     setTextHeight(0);
@@ -513,15 +525,17 @@ export default function ExportModal({
 
   // if the text overflows the wrapper, shrink the font incrementally.
   useEffect(() => {
+    const overflowBuffer = template === 'quote-focus' ? 18 : template === 'quote-only' ? 10 : 2;
+    const minFont = template === 'quote-focus' ? 9 : template === 'quote-only' ? 10 : 8;
     if (
       wrapperHeight > 0 &&
       textHeight > 0 &&
-      textHeight > wrapperHeight + 1 &&
-      promptFont > 8
+      textHeight > Math.max(0, wrapperHeight - overflowBuffer) &&
+      promptFont > minFont
     ) {
-      setPromptFont((f) => f - 2);
+      setPromptFont((f) => f - 1);
     }
-  }, [wrapperHeight, textHeight, promptFont]);
+  }, [wrapperHeight, textHeight, promptFont, template]);
 
   const captureImage = async (): Promise<string | null> => {
     if (Platform.OS === 'web') {
