@@ -1,7 +1,6 @@
 ﻿import { BookOpen, Camera, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -15,8 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '../../constants/theme';
+import { recognizeHandwriting } from '../../utils/ocr';
 import { Prompt, Term } from '../../utils/prompts';
-import ConfirmModal from './confirm-modal';
 import DictionaryModal from './dictionary-modal';
 import QuoteModal from './quote-modal';
 import TermDetailModal from './term-detail-modal';
@@ -112,6 +111,12 @@ export default function WritingSessionModal({
   const [showTermDetail, setShowTermDetail] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
+  const [showScanSource, setShowScanSource] = useState(false);
+  const [infoModal, setInfoModal] = useState<{ visible: boolean; title: string; message: string }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
   const [scanning, setScanning] = useState(false);
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
 
@@ -208,18 +213,18 @@ export default function WritingSessionModal({
       launchScan('library');
       return;
     }
-    Alert.alert('Scan Handwriting', 'Choose a source for your handwritten text.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Take Photo', onPress: () => launchScan('camera') },
-      { text: 'Choose from Library', onPress: () => launchScan('library') },
-    ]);
+    setShowScanSource(true);
   };
+
+  const showInfo = useCallback((title: string, message: string) => {
+    setInfoModal({ visible: true, title, message });
+  }, []);
 
   const launchScan = async (source: 'camera' | 'library') => {
     if (source === 'camera' && Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow camera access to scan handwriting.');
+        showInfo('Permission needed', 'Allow camera access to scan handwriting.');
         return;
       }
     }
@@ -240,23 +245,29 @@ export default function WritingSessionModal({
         setScanImage(asset.uri);
       }
       const b64 = (asset.base64 ?? '') as string;
-      const form = new FormData();
-      form.append('apikey', 'K88899267988957'); // OCR.space free-tier key
-      form.append('base64Image', `data:image/jpeg;base64,${b64}`);
-      form.append('language', 'eng');
-      form.append('isOverlayRequired', 'false');
 
-      const res  = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
-      const data = await res.json();
-      const recognized: string = data?.ParsedResults?.[0]?.ParsedText ?? '';
+      let recognized = await recognizeHandwriting({ base64: b64 });
+
+      // Fallback for native / unsupported runtime paths.
+      if (!recognized.trim()) {
+        const form = new FormData();
+        form.append('apikey', 'K88899267988957');
+        form.append('base64Image', `data:image/jpeg;base64,${b64}`);
+        form.append('language', 'eng');
+        form.append('isOverlayRequired', 'false');
+
+        const res = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
+        const data = await res.json();
+        recognized = (data?.ParsedResults?.[0]?.ParsedText ?? '') as string;
+      }
 
       if (recognized.trim()) {
         insertTextIntoEditor(recognized.trim());
       } else {
-        Alert.alert('No text found', 'Could not read text from the image. Try a clearer photo with good lighting.');
+        showInfo('No text found', 'Could not read text from the image. Try a clearer photo with good lighting.');
       }
     } catch {
-      Alert.alert('Error', 'Failed to process the image. Please try again.');
+      showInfo('Error', 'Failed to process the image. Please try again.');
     } finally {
       setScanning(false);
     }
@@ -403,23 +414,88 @@ export default function WritingSessionModal({
             author={prompt?.author}
             onClose={() => setShowQuoteModal(false)}
           />
+
+          {showAbandonConfirm && (
+            <View style={styles.dialogBackdrop}>
+              <View style={styles.dialogCard}>
+                <Text style={styles.dialogTitle}>Abandon session?</Text>
+                <Text style={styles.dialogMessage}>Your writing will not be saved.</Text>
+                <View style={styles.dialogRow}>
+                  <TouchableOpacity
+                    style={[styles.dialogButton, styles.dialogButtonSecondary]}
+                    onPress={() => setShowAbandonConfirm(false)}
+                  >
+                    <Text style={styles.dialogSecondaryText}>Keep writing</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dialogButton, styles.dialogButtonPrimary]}
+                    onPress={() => {
+                      setShowAbandonConfirm(false);
+                      if (timerRef.current) clearInterval(timerRef.current);
+                      setTimerActive(false);
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.dialogPrimaryText}>Abandon</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {showScanSource && (
+            <View style={styles.dialogBackdrop}>
+              <View style={styles.dialogCard}>
+                <Text style={styles.dialogTitle}>Scan handwriting</Text>
+                <Text style={styles.dialogMessage}>Choose a source for your handwritten text.</Text>
+                <View style={styles.dialogColumn}>
+                  <TouchableOpacity
+                    style={[styles.dialogButton, styles.dialogButtonPrimary, styles.dialogFullWidth]}
+                    onPress={() => {
+                      setShowScanSource(false);
+                      launchScan('camera');
+                    }}
+                  >
+                    <Text style={styles.dialogPrimaryText}>Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dialogButton, styles.dialogButtonPrimary, styles.dialogFullWidth]}
+                    onPress={() => {
+                      setShowScanSource(false);
+                      launchScan('library');
+                    }}
+                  >
+                    <Text style={styles.dialogPrimaryText}>Choose from Library</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dialogButton, styles.dialogButtonSecondary, styles.dialogFullWidth]}
+                    onPress={() => setShowScanSource(false)}
+                  >
+                    <Text style={styles.dialogSecondaryText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {infoModal.visible && (
+            <View style={styles.dialogBackdrop}>
+              <View style={styles.dialogCard}>
+                <Text style={styles.dialogTitle}>{infoModal.title}</Text>
+                <Text style={styles.dialogMessage}>{infoModal.message}</Text>
+                <View style={styles.dialogRowEnd}>
+                  <TouchableOpacity
+                    style={[styles.dialogButton, styles.dialogButtonPrimary]}
+                    onPress={() => setInfoModal({ visible: false, title: '', message: '' })}
+                  >
+                    <Text style={styles.dialogPrimaryText}>OK</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
         </SafeAreaView>
       </Modal>
-
-      <ConfirmModal
-        visible={showAbandonConfirm}
-        title="Abandon session?"
-        message="Your writing will not be saved."
-        cancelText="Keep writing"
-        confirmText="Abandon"
-        onCancel={() => setShowAbandonConfirm(false)}
-        onConfirm={() => {
-          setShowAbandonConfirm(false);
-          if (timerRef.current) clearInterval(timerRef.current);
-          setTimerActive(false);
-          onClose();
-        }}
-      />
     </>
   );
 }
@@ -650,5 +726,75 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: 'Georgia-Italic', default: 'serif' }),
     fontSize: 15,
     color: '#8a6f5e',
+  },
+
+  // Custom dialogs
+  dialogBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    zIndex: 1000,
+  },
+  dialogCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d4c4b8',
+    backgroundColor: '#f5f0eb',
+    padding: 16,
+  },
+  dialogTitle: {
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
+    fontSize: 18,
+    color: '#2c1810',
+    marginBottom: 8,
+  },
+  dialogMessage: {
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
+    fontSize: 14,
+    color: '#5a3d2b',
+    marginBottom: 14,
+  },
+  dialogRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  dialogRowEnd: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  dialogColumn: {
+    gap: 8,
+  },
+  dialogButton: {
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  dialogButtonPrimary: {
+    backgroundColor: '#b8622a',
+  },
+  dialogButtonSecondary: {
+    backgroundColor: '#faf8f7',
+    borderWidth: 1,
+    borderColor: '#d4c4b8',
+  },
+  dialogPrimaryText: {
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  dialogSecondaryText: {
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
+    color: '#5a3d2b',
+    fontSize: 14,
+  },
+  dialogFullWidth: {
+    width: '100%',
   },
 });

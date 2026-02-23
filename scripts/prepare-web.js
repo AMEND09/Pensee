@@ -26,7 +26,24 @@ for (const name of fs.readdirSync(dist)) {
   if (name === 'web') continue; // skip target directory
   const src = path.join(dist, name);
   const dest = path.join(webDir, name);
-  fs.renameSync(src, dest);
+  // guard against leftover from previous run; delete the destination first if it exists
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true, force: true });
+  }
+  try {
+    fs.renameSync(src, dest);
+  } catch (err) {
+    console.warn(`prepare-web: couldn't rename ${name}, falling back to copy`, err.message);
+    // graceful fallback: copy files/dirs
+    const stat = fs.statSync(src);
+    if (stat.isDirectory()) {
+      fs.cpSync(src, dest, { recursive: true, force: true });
+      fs.rmSync(src, { recursive: true, force: true });
+    } else {
+      fs.copyFileSync(src, dest);
+      fs.unlinkSync(src);
+    }
+  }
 }
 
 // copy landing page into dist root so the asset directory includes it
@@ -46,6 +63,26 @@ if (fs.existsSync(landingPage)) {
     console.warn(`prepare-web: ${name} not found, skipping`);
   }
 });
+
+// copy logo asset so landing page favicon actually resolves
+const logoSrc = path.join(root, 'assets/images/logo.png');
+if (fs.existsSync(logoSrc)) {
+  // put copies where various paths might point to
+  const logoDest = path.join(dist, 'assets/images/logo.png');
+  fs.mkdirSync(path.dirname(logoDest), { recursive: true });
+  fs.copyFileSync(logoSrc, logoDest);
+  // root location so /logo.png works from landing page or app
+  fs.copyFileSync(logoSrc, path.join(dist, 'logo.png'));
+  // when the app is served from /web, some relative links may resolve under
+  // that prefix; ensure a copy exists there too
+  const webLogoDest = path.join(webDir, 'assets/images/logo.png');
+  fs.mkdirSync(path.dirname(webLogoDest), { recursive: true });
+  fs.copyFileSync(logoSrc, webLogoDest);
+  fs.copyFileSync(logoSrc, path.join(webDir, 'logo.png')); // and at /web/logo.png
+  console.log('prepare-web: copied logo.png into dist (root, assets, and web)');
+} else {
+  console.warn('prepare-web: logo asset not found, favicon link may break');
+}
 
 // also copy legal markdown files so they're served alongside the app
 ['privacy-policy.md', 'terms-and-conditions.md'].forEach((name) => {
@@ -82,8 +119,13 @@ if (fs.existsSync(webIndex)) {
   </script>`;
   html = html.replace(/<\/head>/, urlShim + '</head>');
 
+  // also swap the generated favicon reference to our logo so the SPA
+  // consistently uses the same image (favicon.ico is auto-generated and not
+  // easily controlled).
+  html = html.replace(/<link rel="icon" href="\/favicon.ico"/, '<link rel="icon" href="/logo.png"');
+
   fs.writeFileSync(webIndex, html);
-  console.log('prepare-web: patched asset paths + injected URL shim into dist/web/index.html');
+  console.log('prepare-web: patched asset paths + injected URL shim into dist/web/index.html and updated favicon link');
 }
 
 console.log('prepare-web: moved web build into /web and installed landing page');
