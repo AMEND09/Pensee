@@ -83,6 +83,7 @@ const WordReel = forwardRef<
      * Defaults to 1.
      */
     maxLines?: number;
+    fullWidth?: boolean;
     /**
      * When true the reel will scroll downward instead of upward.  This
      * reverses the animation and also flips the frames so the final value
@@ -90,7 +91,7 @@ const WordReel = forwardRef<
      */
     reverse?: boolean;
   }
->(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', maxLines = 1, reverse = false }, ref) => {
+>(({ rowHeight, containerStyle, textStyle, fades = false, fadeColor = '#ffffff', maxLines = 1, fullWidth = true, reverse = false }, ref) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const [items, setItems] = useState<string[]>(['']);
   const animRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -168,12 +169,12 @@ const WordReel = forwardRef<
   const fadeH = Math.round(rowHeight * 0.38);
 
   return (
-    <View style={[{ height: rowHeight, overflow: 'hidden', width: '100%' }, containerStyle]}>
+    <View style={[{ height: rowHeight, overflow: 'hidden', width: fullWidth ? '100%' : undefined }, containerStyle]}>
       <Animated.View style={{ transform: [{ translateY }] }}>
         {items.map((word, i) => (
           <View
             key={i}
-            style={{ height: rowHeight, justifyContent: 'center', alignItems: 'flex-start', width: '100%' }}
+            style={{ height: rowHeight, justifyContent: 'center', alignItems: 'flex-start', width: fullWidth ? '100%' : undefined }}
           >
             <Text style={textStyle} numberOfLines={maxLines} ellipsizeMode="tail">
               {word}
@@ -618,6 +619,7 @@ export default function HomeScreen() {
                   rowHeight={TERM_ROW_H}
                   containerStyle={styles.termReelContainer}
                   textStyle={styles.termChipLabel}
+                  fullWidth={false}
                   reverse
                 />
               </TouchableOpacity>
@@ -690,7 +692,7 @@ export default function HomeScreen() {
       />
       <QuoteModal
         visible={showQuote}
-        quote={prompt?.text ?? ''}
+        quote={displayText || prompt?.text || ''}
         author={prompt?.author}
         onClose={() => setShowQuote(false)}
       />
@@ -841,14 +843,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   quoteText: {
-    fontFamily: Font.serifBold,
+    fontFamily: Font.serif,
     fontSize: 32,
     color: Colors.textPrimary,
     letterSpacing: 1,
     // lineHeight now calculated per-font-size
   },
   wordText: {
-    fontFamily: Font.serifBold,
+    fontFamily: Font.serif,
     fontSize: 32,        // reduced size for better fit on small screens
     color: Colors.textPrimary,
     letterSpacing: 1,
@@ -889,7 +891,7 @@ const styles = StyleSheet.create({
     lineHeight: TERM_ROW_H,
   },
   termReelContainer: {
-    minWidth: 80,
+    minWidth: 28,
   },
 
   //  Encouragement

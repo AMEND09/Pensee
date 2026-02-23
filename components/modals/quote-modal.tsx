@@ -5,7 +5,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 
@@ -20,20 +21,28 @@ type Props = {
 // UI rather than Alert so that the experience is consistent across platforms
 // and we can style the typography.
 export default function QuoteModal({ visible, quote, author, onClose }: Props) {
+  const trimmedQuote = quote?.trim() ?? '';
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
-          <ScrollView style={styles.content}>
-            <Text
-              style={styles.quote}
-              adjustsFontSizeToFit
-              minimumFontScale={0.5}
-            >
-              {quote}
-            </Text>
-            {author ? <Text style={styles.author}>— {author}</Text> : null}
-          </ScrollView>
+          <View style={styles.body}>
+            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+              {trimmedQuote ? (
+                <Text style={styles.quote}>{trimmedQuote}</Text>
+              ) : (
+                <Text style={styles.emptyQuote}>No quote is available yet. Try shuffling for a new prompt.</Text>
+              )}
+              {author ? <Text style={styles.author}>— {author}</Text> : null}
+            </ScrollView>
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <Text style={styles.closeBtnText}>Done</Text>
           </TouchableOpacity>
@@ -57,6 +66,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     maxHeight: '75%',
+    minHeight: 180,
     overflow: 'hidden',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
@@ -67,11 +77,17 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     padding: Spacing.lg,
   },
+  body: {
+    flexShrink: 1,
+  },
   content: {
-    flex: 1,
+    maxHeight: 420,
+  },
+  contentContainer: {
+    paddingBottom: Spacing.md,
   },
   quote: {
-    fontFamily: Font.serifBold,
+    fontFamily: Font.serif,
     fontSize: 20,
     color: Colors.textPrimary,
     marginBottom: Spacing.md,
@@ -84,9 +100,15 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'right',
   },
+  emptyQuote: {
+    fontFamily: Font.serif,
+    fontSize: 16,
+    color: Colors.textSecondary,
+    lineHeight: 24,
+  },
   closeBtn: {
     alignSelf: 'flex-end',
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   closeBtnText: {
     fontFamily: Font.serifBold,

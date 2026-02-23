@@ -128,17 +128,37 @@ function pickTerms(seed: number): Term[] {
 
 /** fetch a quote from the remote API */
 async function fetchQuote(): Promise<{ quote: string; author: string }> {
-  try {
-    const res = await fetch(
-      'https://quoteslate.vercel.app/api/quotes/random?minLength=50&maxLength=150',
-    );
-    const json = await res.json();
-    return { quote: json.quote, author: json.author };
-  } catch {
-    // fallback to a random entry from the static list if network fails
-    const fallback = creativeWords[Math.floor(Math.random() * creativeWords.length)];
-    return { quote: fallback, author: '' };
+  const endpoints = [
+    'https://quoteslate.vercel.app/api/quotes/random?minLength=50&maxLength=150',
+    'https://zenquotes.io/api/random',
+  ];
+
+  for (const url of endpoints) {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    try {
+      const controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 7000);
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const fromQuoteSlate =
+        json && typeof json.quote === 'string' && typeof json.author === 'string'
+          ? { quote: json.quote, author: json.author }
+          : null;
+      const fromZenQuotes =
+        Array.isArray(json) && json[0] && typeof json[0].q === 'string'
+          ? { quote: json[0].q, author: typeof json[0].a === 'string' ? json[0].a : '' }
+          : null;
+      const parsed = fromQuoteSlate ?? fromZenQuotes;
+      if (parsed && parsed.quote.trim()) return parsed;
+    } catch {} finally {
+      if (timeout) clearTimeout(timeout);
+    }
   }
+
+  // fallback to a random entry from the static list if network fails
+  const fallback = creativeWords[Math.floor(Math.random() * creativeWords.length)];
+  return { quote: fallback, author: '' };
 }
 
 /** Returns today's prompt. */

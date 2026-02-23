@@ -122,11 +122,19 @@ export default function DictionaryModal({ visible, onClose, initialQuery = '' }:
     const term = query.trim();
     if (term !== '') {
       setLoading(true);
-      fetchOnlineDefinition(term).then((res) => {
-        if (!active) return;
-        setLoading(false);
-        setOnlineResult(res ? { term, entry: res } : null);
-      });
+      fetchOnlineDefinition(term)
+        .then((res) => {
+          if (!active) return;
+          setOnlineResult(res ? { term, entry: res } : null);
+        })
+        .catch(() => {
+          if (!active) return;
+          setOnlineResult(null);
+        })
+        .finally(() => {
+          if (!active) return;
+          setLoading(false);
+        });
     } else {
       setLoading(false);
       setOnlineResult(null);
@@ -139,7 +147,13 @@ export default function DictionaryModal({ visible, onClose, initialQuery = '' }:
   }, [visible, initialQuery]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      presentationStyle="overFullScreen"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
 
@@ -204,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBg,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    maxHeight: '90%',
+    height: '90%',
     borderWidth: 1,
     borderColor: Colors.border,
     borderBottomWidth: 0,

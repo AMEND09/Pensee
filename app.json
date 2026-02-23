@@ -4,7 +4,7 @@
     "slug": "pensee",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./logo.png",
     "scheme": "pensee",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -41,14 +41,14 @@
     },
     "web": {
       "output": "spa",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import html2canvas from 'html2canvas';
 import { Download, Share2, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -316,7 +315,7 @@ const card = StyleSheet.create({
 
   // ── Prompt words ────────────────────────────────────────────────────────
   promptWord: {
-    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 36,
     color: Colors.textPrimary,
     textAlign: 'center',
@@ -325,7 +324,7 @@ const card = StyleSheet.create({
     marginBottom: 12,
   },
   promptWordSmall: {
-    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 18,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -334,7 +333,7 @@ const card = StyleSheet.create({
     marginBottom: 8,
   },
   promptWordLarge: {
-    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 42,
     color: Colors.textPrimary,
     textAlign: 'center',
@@ -545,7 +544,8 @@ export default function ExportModal({
       try {
         const el = document.getElementById('export-card');
         if (!el) return null;
-        const canvas = await html2canvas(el as HTMLElement, { backgroundColor: null });
+        const html2canvasModule = await import('html2canvas');
+        const canvas = await html2canvasModule.default(el as HTMLElement, { backgroundColor: null });
         return canvas.toDataURL('image/png');
       } catch (err) {
         console.error('html2canvas capture failed', err);

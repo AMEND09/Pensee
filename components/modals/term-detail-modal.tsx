@@ -10,7 +10,7 @@ import {
     View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import { OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
+import { normalizeTermKey, OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
 import { rhetoricalDefinitions, rhetoricalExamples } from '../../utils/prompts';
 
 type Props = {
@@ -22,33 +22,58 @@ type Props = {
 export default function TermDetailModal({ term, visible, onClose }: Props) {
   const [onlineEntry, setOnlineEntry] = React.useState<OnlineEntry | null>(null);
   const [loadingOnline, setLoadingOnline] = React.useState(false);
+  const normalizedTerm = term ? normalizeTermKey(term) : null;
+
+  const isRhetorical = normalizedTerm
+    ? Object.prototype.hasOwnProperty.call(rhetoricalDefinitions, normalizedTerm) ||
+      Object.prototype.hasOwnProperty.call(rhetoricalExamples, normalizedTerm)
+    : false;
 
   React.useEffect(() => {
+    let active = true;
     setOnlineEntry(null);
-    if (term) {
+    if (normalizedTerm && !isRhetorical) {
       // if we have manual examples for this rhetorical device, the
       // dictionary helper will return a fabricated entry without hitting
       // the network, but we still show the loading spinner briefly to
       // keep the UX consistent.
       setLoadingOnline(true);
-      fetchOnlineDefinition(term).then((res) => {
-        setOnlineEntry(res);
-        setLoadingOnline(false);
-      });
+      fetchOnlineDefinition(normalizedTerm)
+        .then((res) => {
+          if (!active) return;
+          setOnlineEntry(res);
+        })
+        .catch(() => {
+          if (!active) return;
+          setOnlineEntry(null);
+        })
+        .finally(() => {
+          if (!active) return;
+          setLoadingOnline(false);
+        });
     } else {
       setLoadingOnline(false);
     }
-  }, [term]);
+    return () => {
+      active = false;
+    };
+  }, [normalizedTerm, isRhetorical]);
 
   // determine offline label when we don't have an onlineEntry
-  const offlineType: string | null = term
-    ? term in rhetoricalDefinitions
+  const offlineType: string | null = normalizedTerm
+    ? isRhetorical
       ? 'rhetorical device'
       : 'vocabulary'
     : null;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
           {/* Header */}
@@ -68,7 +93,8 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
 
           <View style={styles.divider} />
 
-          {(() => {
+          <View style={styles.body}>
+            {(() => {
             if (loadingOnline) {
               return (
                 <View style={styles.loaderContainer}>
@@ -83,12 +109,12 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
             // shouldn't be now that both are exported as objects) so the RHS of
             // `in` is always an object.
             if (
-              term &&
-              ((rhetoricalExamples && term in rhetoricalExamples) ||
-                (rhetoricalDefinitions && term in rhetoricalDefinitions))
+              normalizedTerm &&
+              (Object.prototype.hasOwnProperty.call(rhetoricalExamples, normalizedTerm) ||
+                Object.prototype.hasOwnProperty.call(rhetoricalDefinitions, normalizedTerm))
             ) {
-              const examples = (rhetoricalExamples && rhetoricalExamples[term]) || [];
-              const definition = (rhetoricalDefinitions && rhetoricalDefinitions[term]) || '';
+              const examples = rhetoricalExamples[normalizedTerm] || [];
+              const definition = rhetoricalDefinitions[normalizedTerm] || '';
               // render definition in dictionary style
               return (
                 <ScrollView
@@ -173,6 +199,7 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
             }
             return <Text style={styles.notFound}>No entry found for "{term}".</Text>;
           })()}
+          </View>
         </Pressable>
       </Pressable>
     </Modal>
@@ -193,6 +220,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     maxHeight: '75%',
+    minHeight: 200,
     overflow: 'hidden',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
@@ -242,8 +270,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.divider,
     marginHorizontal: Spacing.lg,
   },
+  body: {
+    flexShrink: 1,
+  },
   scroll: {
-    flex: 1,
+    maxHeight: 440,
   },
   scrollContent: {
     padding: Spacing.lg,
