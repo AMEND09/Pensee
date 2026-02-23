@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export type Term = {
   id: string;
   label: string;
@@ -146,29 +148,38 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
   // simple cache so the quote stays the same during the day without
   // hammering the remote API repeatedly in a single session.
   const key = 'pensee.dailyPrompt';
-  if (typeof localStorage !== 'undefined') {
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const obj = JSON.parse(stored) as { date: string; prompt: Prompt };
-        if (obj.date === date.toISOString().slice(0, 10)) {
-          return obj.prompt;
-        }
-      }
-    } catch {
-      // ignore parse errors
+  const today = date.toISOString().slice(0, 10);
+  try {
+    let stored: string | null = null;
+    if (typeof localStorage !== 'undefined') {
+      stored = localStorage.getItem(key);
+    } else {
+      stored = await AsyncStorage.getItem(key);
     }
+    if (stored) {
+      const obj = JSON.parse(stored) as { date: string; prompt: Prompt };
+      if (obj.date === today) {
+        return obj.prompt;
+      }
+    }
+  } catch {
+    // ignore parse/storage errors
   }
 
   const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
   const terms = pickTerms(seed);
   const { quote, author } = await fetchQuote();
   const prompt: Prompt = { text: quote, terms, author };
-  if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(key, JSON.stringify({ date: date.toISOString().slice(0, 10), prompt }));
-    } catch {}
-  }
+
+  try {
+    const data = JSON.stringify({ date: today, prompt });
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, data);
+    } else {
+      await AsyncStorage.setItem(key, data);
+    }
+  } catch {}
+
   return prompt;
 }
 

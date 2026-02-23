@@ -279,19 +279,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     lineHeight: 22,
-  },  definitionBlock: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.cardBg,
-    borderRadius: Radius.sm,
-    marginBottom: Spacing.md,
   },
-  definitionText: {
-    fontFamily: Font.serif,
-    fontSize: 15,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-  },  exampleLabel: {
+  exampleLabel: {
     fontFamily: Font.serifBold,
     fontSize: 12,
     color: Colors.textMuted,

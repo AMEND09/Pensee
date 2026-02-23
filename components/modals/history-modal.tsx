@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Session } from '../../utils/storage';
 // ExportModal will be required dynamically inside the component to avoid
