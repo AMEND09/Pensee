@@ -19,16 +19,6 @@ import ConfirmModal from './confirm-modal';
 import DictionaryModal from './dictionary-modal';
 import QuoteModal from './quote-modal';
 import TermDetailModal from './term-detail-modal';
-// rich-editor is only required on native platforms
-let RichEditor: any = null;
-let RichToolbar: any = null;
-let actions: any = null;
-if (Platform.OS !== 'web') {
-  const rich = require('react-native-pell-rich-editor');
-  RichEditor = rich.RichEditor;
-  RichToolbar = rich.RichToolbar;
-  actions = rich.actions;
-}
 
 
 // expo-image-picker works on all platforms: native (camera + library) and web (file picker)
@@ -38,7 +28,6 @@ import * as ImagePicker from 'expo-image-picker';
 
 const SESSION_SECONDS = 600;
 const LINE_HEIGHT = 28;
-const NUM_LINES = 35;
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -46,81 +35,6 @@ function formatTime(s: number): string {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
-function htmlWordCount(html: string): number {
-  if (!html || !html.trim()) return 0;
-  const text = html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&[a-z]+;/g, ' ')
-    .trim();
-  return text === '' ? 0 : text.split(/\s+/).filter(Boolean).length;
-}
-
-// --- Editor CSS (injected into WebView) ---
-
-const EDITOR_CSS = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 16px;
-    line-height: 28px;
-    color: #2c1810;
-    background-color: transparent;
-    padding: 12px 20px 60px 56px;
-    min-height: 100vh;
-    background-image:
-      linear-gradient(to right,
-        transparent 47px,
-        rgba(185,100,80,0.18) 47px,
-        rgba(185,100,80,0.18) 48px,
-        transparent 48px),
-      repeating-linear-gradient(to bottom,
-        transparent,
-        transparent 27px,
-        #e8e2d9 27px,
-        #e8e2d9 28px);
-    background-attachment: local;
-  }
-  p { margin: 0; min-height: 28px; }
-  b, strong { font-family: Georgia, serif; font-weight: bold; }
-  i, em     { font-family: Georgia, serif; font-style: italic; }
-  blockquote {
-    border-left: 3px solid #b8622a;
-    margin: 8px 0;
-    padding: 2px 0 2px 16px;
-    color: #6b4c38;
-    font-style: italic;
-  }
-  ul, ol { padding-left: 28px; margin: 4px 0; }
-  h1 { font-size: 22px; font-weight: bold; line-height: 28px; }
-  h2 { font-size: 18px; font-weight: bold; line-height: 28px; }
-`;
-
-// Tab key -> indent/outdent
-const TAB_JS = `
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        document.execCommand('outdent', false, null);
-      } else {
-        var sel = window.getSelection();
-        if (sel && sel.rangeCount) {
-          var node = sel.anchorNode;
-          while (node && node.nodeName !== 'LI' && node !== document.body) {
-            node = node.parentNode;
-          }
-          if (node && node.nodeName === 'LI') {
-            document.execCommand('indent', false, null);
-          } else {
-            document.execCommand('insertHTML', false, '&nbsp;&nbsp;&nbsp;&nbsp;');
-          }
-        }
-      }
-    }
-  }, true);
-  true;
-`;
 
 // --- Compact Prompt Bar ---
 
@@ -187,8 +101,6 @@ export default function WritingSessionModal({
   onClose,
   onComplete,
 }: Props) {
-  const isWeb = Platform.OS === 'web';
-  const [html, setHtml] = useState('');
   const [text, setText] = useState('');
   const [seconds, setSeconds] = useState(SESSION_SECONDS);
   const [timerActive, setTimerActive] = useState(false);
@@ -198,14 +110,13 @@ export default function WritingSessionModal({
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const [showTermDetail, setShowTermDetail] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
 
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<TextInput | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wordCount = isWeb ? (text.trim() === '' ? 0 : text.trim().split(/\s+/).length) : htmlWordCount(html);
+  const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -235,13 +146,11 @@ export default function WritingSessionModal({
 
   useEffect(() => {
     if (visible) {
-      setHtml('');
       setText('');
       setSeconds(SESSION_SECONDS);
       setTimerActive(false);
       setFinished(false);
       setScanImage(undefined);
-      setTimeout(() => editorRef.current?.setContentHTML(''), 150);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
@@ -249,36 +158,24 @@ export default function WritingSessionModal({
 
   const handleStart = () => {
     setTimerActive(true);
-    editorRef.current?.focusContentEditor();
+    editorRef.current?.focus();
   };
 
   const handleComplete = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     setTimerActive(false);
-    onComplete(isWeb ? text : html, wordCount, scanImage);
-  }, [html, text, wordCount, onComplete, isWeb, scanImage]);
+    onComplete(text, wordCount, scanImage);
+  }, [text, wordCount, onComplete, scanImage]);
 
   const handleDone = () => {
-    if (isWeb) {
-      if (wordCount === 0) {
-        onClose();
-      } else {
-        handleComplete();
-      }
-      return;
-    }
     if (wordCount === 0) {
-      setShowEmptyConfirm(true);
-      return;
+      onClose();
+    } else {
+      handleComplete();
     }
-    handleComplete();
   };
 
   const handleDismiss = () => {
-    if (isWeb) {
-      onClose();
-      return;
-    }
     if (timerActive || wordCount > 0) {
       setShowAbandonConfirm(true);
     } else {
@@ -295,32 +192,28 @@ export default function WritingSessionModal({
     setShowQuoteModal(true);
   };
 
-  // Insert text into whichever editor is active
+  // Insert text into the editor
   const insertTextIntoEditor = useCallback((insertedText: string) => {
-    if (isWeb) {
-      setText((prev) => (prev ? `${prev}\n${insertedText}` : insertedText));
-    } else {
-      editorRef.current?.insertHTML(insertedText.replace(/\n/g, '<br>'));
-    }
-  }, [isWeb]);
+    setText((prev) => (prev ? `${prev}\n${insertedText}` : insertedText));
+  }, []);
 
 
   // ── Scan / OCR ─────────────────────────────────────────────────────────────
   const handleScan = () => {
-    if (isWeb) {
+    if (Platform.OS === 'web') {
       // On web: open file picker directly (works on desktop and mobile browsers)
       launchScan('library');
-    } else {
-      Alert.alert('Scan Handwriting', 'Choose a source for your handwritten text.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Take Photo', onPress: () => launchScan('camera') },
-        { text: 'Choose from Library', onPress: () => launchScan('library') },
-      ]);
+      return;
     }
+    Alert.alert('Scan Handwriting', 'Choose a source for your handwritten text.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Take Photo', onPress: () => launchScan('camera') },
+      { text: 'Choose from Library', onPress: () => launchScan('library') },
+    ]);
   };
 
   const launchScan = async (source: 'camera' | 'library') => {
-    if (source === 'camera' && !isWeb) {
+    if (source === 'camera' && Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Allow camera access to scan handwriting.');
@@ -331,7 +224,7 @@ export default function WritingSessionModal({
     try {
       const opts = { mediaTypes: ['images'] as any, quality: 0.85, base64: true };
       const result =
-        source === 'camera' && !isWeb
+        source === 'camera' && Platform.OS !== 'web'
           ? await ImagePicker.launchCameraAsync(opts)
           : await ImagePicker.launchImageLibraryAsync(opts);
 
@@ -440,76 +333,24 @@ export default function WritingSessionModal({
 
             <View style={styles.divider} />
 
-            {!isWeb && (
-              <>
-                {/* WYSIWYG toolbar */}
-                <RichToolbar
-                  editor={editorRef}
-                  style={styles.richToolbar}
-                  flatContainerStyle={styles.richToolbarFlat}
-                  selectedIconTint="#b8622a"
-                  iconTint="#6b4c38"
-                  actions={[
-                    actions.undo,
-                    actions.redo,
-                    actions.setBold,
-                    actions.setItalic,
-                    actions.setUnderline,
-                    actions.setStrikethrough,
-                    actions.indent,
-                    actions.outdent,
-                    actions.insertBulletsList,
-                    actions.insertOrderedList,
-                    actions.blockquote,
-                    actions.heading1,
-                    actions.heading2,
-                    actions.alignLeft,
-                    actions.alignCenter,
-                    actions.insertLink,
-                  ]}
-                  iconMap={{
-                    [actions.heading1]: () => <Text style={styles.toolbarLabel}>H1</Text>,
-                    [actions.heading2]: () => <Text style={styles.toolbarLabel}>H2</Text>,
-                  }}
-                />
-
-                <View style={styles.divider} />
-
-                {/* Word count */}
-                <View style={styles.countBar}>
-                  <Text style={styles.countText}>
-                    {wordCount} {wordCount === 1 ? 'word' : 'words'}
-                  </Text>
-                </View>
-              </>
-            )}
+            <View style={styles.countBar}>
+              <Text style={styles.countText}>
+                {wordCount} {wordCount === 1 ? 'word' : 'words'}
+              </Text>
+            </View>
 
             {/* Editor area */}
             <View style={styles.editorArea}>
-              {isWeb ? (
-                <TextInput
-                  style={[styles.editor, styles.webEditor]}
-                  multiline
-                  value={text}
-                  onChangeText={setText}
-                  editable={timerActive}
-                  placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
-                  textAlignVertical="top"
-                />
-              ) : (
-                <RichEditor
-                  ref={editorRef}
-                  style={styles.editor}
-                  editorStyle={{ backgroundColor: '#ffffff', cssText: EDITOR_CSS }}
-                  initialContentHTML=""
-                  placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
-                  onChange={setHtml}
-                  pasteAsPlainText={false}
-                  initialFocus={false}
-                  injectedJavaScript={TAB_JS}
-                  useContainer
-                />
-              )}
+              <TextInput
+                ref={editorRef}
+                style={[styles.editor, styles.webEditor]}
+                multiline
+                value={text}
+                onChangeText={setText}
+                editable={timerActive}
+                placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
+                textAlignVertical="top"
+              />
 
               {/* Block editing until timer starts */}
               {!timerActive && !finished && (
@@ -527,39 +368,25 @@ export default function WritingSessionModal({
               )}
             </View>
           </KeyboardAvoidingView>
+          <DictionaryModal
+            visible={showDict}
+            onClose={() => setShowDict(false)}
+            initialQuery={dictQuery}
+          />
+
+          <TermDetailModal
+            visible={showTermDetail}
+            term={selectedTerm?.id ?? null}
+            onClose={() => setShowTermDetail(false)}
+          />
+          <QuoteModal
+            visible={showQuoteModal}
+            quote={prompt?.text ?? ''}
+            author={prompt?.author}
+            onClose={() => setShowQuoteModal(false)}
+          />
         </SafeAreaView>
       </Modal>
-
-      <DictionaryModal
-        visible={showDict}
-        onClose={() => setShowDict(false)}
-        initialQuery={dictQuery}
-      />
-
-      <TermDetailModal
-        visible={showTermDetail}
-        term={selectedTerm?.id ?? null}
-        onClose={() => setShowTermDetail(false)}
-      />
-      <QuoteModal
-        visible={showQuoteModal}
-        quote={prompt?.text ?? ''}
-        author={prompt?.author}
-        onClose={() => setShowQuoteModal(false)}
-      />
-
-      <ConfirmModal
-        visible={showEmptyConfirm}
-        title="Nothing written yet"
-        message="Write something first, or dismiss the session."
-        cancelText="Keep writing"
-        confirmText="Dismiss anyway"
-        onCancel={() => setShowEmptyConfirm(false)}
-        onConfirm={() => {
-          setShowEmptyConfirm(false);
-          handleDismiss();
-        }}
-      />
 
       <ConfirmModal
         visible={showAbandonConfirm}
