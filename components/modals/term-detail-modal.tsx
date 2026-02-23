@@ -10,7 +10,7 @@ import {
     View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import { normalizeTermKey, OnlineEntry, fetchOnlineDefinition } from '../../utils/dictionary';
+import { fetchOnlineDefinition, normalizeTermKey, OnlineEntry } from '../../utils/dictionary';
 import { rhetoricalDefinitions, rhetoricalExamples } from '../../utils/prompts';
 
 type Props = {
