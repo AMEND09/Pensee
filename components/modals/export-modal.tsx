@@ -1,20 +1,19 @@
 // @ts-nocheck
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import html2canvas from 'html2canvas';
 import { Download, Share2, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import { APP_URL } from '../../constants/config';
@@ -543,6 +542,7 @@ export default function ExportModal({
       // card element to a canvas and return a data URL.
       setCapturing(true);
       try {
+        const { default: html2canvas } = await import('html2canvas');
         const el = document.getElementById('export-card');
         if (!el) return null;
         const canvas = await html2canvas(el as HTMLElement, { backgroundColor: null });
