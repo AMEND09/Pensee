@@ -10,6 +10,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+  useWindowDimensions,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -117,6 +118,8 @@ export default function WritingSessionModal({
   const editorRef = useRef<TextInput | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+  const { height: viewportHeight } = useWindowDimensions();
+  const lineCount = Math.max(24, Math.ceil(viewportHeight / LINE_HEIGHT) + 12);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -341,9 +344,24 @@ export default function WritingSessionModal({
 
             {/* Editor area */}
             <View style={styles.editorArea}>
+              {Platform.OS !== 'web' && (
+                <View pointerEvents="none" style={styles.nativeNotebookLines}>
+                  <View style={styles.nativeMarginLine} />
+                  {Array.from({ length: lineCount }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.nativeRule,
+                        { top: 12 + i * LINE_HEIGHT + (LINE_HEIGHT - 1) },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+
               <TextInput
                 ref={editorRef}
-                style={[styles.editor, styles.webEditor]}
+                style={[styles.editor, Platform.OS === 'web' && styles.webEditor]}
                 multiline
                 value={text}
                 onChangeText={setText}
@@ -441,7 +459,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   startBtnText: {
-    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 14,
     color: '#fff',
   },
@@ -475,9 +493,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f0eb',
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 12,
     paddingHorizontal: 16,
-    minHeight: 48,
+    minHeight: 72,
     // allow extra room when prompt wraps into two lines
   },
   compactBarColumn: {
@@ -495,7 +514,7 @@ const styles = StyleSheet.create({
     color: '#b4a49a',
   },
   compactWord: {
-    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 17,
     color: '#b8622a',
     letterSpacing: 0.3,
@@ -506,9 +525,9 @@ const styles = StyleSheet.create({
     width: 1, height: 22, backgroundColor: '#e8e2d9',
     marginHorizontal: 12, flexShrink: 0,
   },
-  compactChipsScroll: { flex: 1 },
+  compactChipsScroll: { width: '100%', marginTop: 4 },
   compactChipsContent: {
-    alignItems: 'center', gap: 6, paddingRight: 8, marginTop: 6,
+    alignItems: 'center', gap: 6, paddingRight: 8, paddingBottom: 2,
   },
   compactChip: {
     backgroundColor: '#f0ebe6',
@@ -534,7 +553,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, gap: 2,
   },
   toolbarLabel: {
-    fontFamily: Platform.select({ ios: 'Georgia-Bold', default: 'serif' }),
+    fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 12,
     color: '#6b4c38',
   },
@@ -559,9 +578,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     position: 'relative',
   },
+  nativeNotebookLines: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  nativeMarginLine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 47,
+    width: 1,
+    backgroundColor: 'rgba(185,100,80,0.18)',
+  },
+  nativeRule: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#e8e2d9',
+  },
   editor: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 16,
     lineHeight: LINE_HEIGHT,

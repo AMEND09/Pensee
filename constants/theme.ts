@@ -49,7 +49,7 @@ export const Font = Platform.select<{
   serifBold: string;
   serifItalic: string;
 }>({
-  ios: { serif: 'Georgia', serifBold: 'Georgia-Bold', serifItalic: 'Georgia-Italic' },
+  ios: { serif: 'Georgia', serifBold: 'Georgia', serifItalic: 'Georgia-Italic' },
   default: { serif: 'serif', serifBold: 'serif', serifItalic: 'serif' },
   web: {
     serif: "Georgia, 'Times New Roman', serif",

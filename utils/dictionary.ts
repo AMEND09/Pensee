@@ -24,14 +24,23 @@ export type OnlineEntry = {
  */
 import { rhetoricalDefinitions, rhetoricalExamples } from './prompts';
 
+export function normalizeTermKey(term: string): string {
+  return term.trim().toLowerCase();
+}
+
 export async function fetchOnlineDefinition(term: string): Promise<OnlineEntry | null> {
+  const normalizedTerm = normalizeTermKey(term);
+
   // if the term is one of the predefined rhetorical devices, return a
   // fabricated entry containing only the supplied examples/definitions and
   // avoid any network request.  previously logic only checked the examples map
   // but we now also maintain definitions locally, so include that as well.
-  if (term in rhetoricalExamples || term in rhetoricalDefinitions) {
-    const examples = (rhetoricalExamples && rhetoricalExamples[term]) || [];
-    const def = (rhetoricalDefinitions && rhetoricalDefinitions[term]) || '';
+  if (
+    Object.prototype.hasOwnProperty.call(rhetoricalExamples, normalizedTerm) ||
+    Object.prototype.hasOwnProperty.call(rhetoricalDefinitions, normalizedTerm)
+  ) {
+    const examples = rhetoricalExamples[normalizedTerm] || [];
+    const def = rhetoricalDefinitions[normalizedTerm] || '';
     const meanings = [
       {
         partOfSpeech: 'rhetorical device',
@@ -52,7 +61,7 @@ export async function fetchOnlineDefinition(term: string): Promise<OnlineEntry |
 
   try {
     const resp = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(normalizedTerm)}`
     );
     if (!resp.ok) return null;
     const data = await resp.json();
