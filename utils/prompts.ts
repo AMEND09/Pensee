@@ -1,3 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
 export type Term = {
   id: string;
   label: string;
@@ -127,48 +130,78 @@ function pickTerms(seed: number): Term[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** fetch a quote from the remote API */
-async function fetchQuote(): Promise<{ quote: string; author: string }> {
+async function fetchQuote(): Promise<{ quote: string; author?: string }> {
   try {
     const res = await fetch(
       'https://quoteslate.vercel.app/api/quotes/random?minLength=50&maxLength=150',
     );
+    if (!res.ok) throw new Error('bad response');
     const json = await res.json();
-    return { quote: json.quote, author: json.author };
+    // Validate the response – the API must return a non-empty quote string.
+    if (!json.quote || typeof json.quote !== 'string') throw new Error('invalid quote');
+    return { quote: json.quote, author: json.author || undefined };
   } catch {
     // fallback to a random entry from the static list if network fails
     const fallback = creativeWords[Math.floor(Math.random() * creativeWords.length)];
-    return { quote: fallback, author: '' };
+    return { quote: fallback, author: undefined };
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cross-platform cache helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function readCache(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return await AsyncStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+async function writeCache(key: string, value: string): Promise<void> {
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+    } catch {}
+    return;
+  }
+  try {
+    await AsyncStorage.setItem(key, value);
+  } catch {}
 }
 
 /** Returns today's prompt. */
 export async function getDailyPrompt(date: Date): Promise<Prompt> {
-  // simple cache so the quote stays the same during the day without
-  // hammering the remote API repeatedly in a single session.
+  // Cache the daily prompt so the quote stays consistent throughout the day
+  // without hammering the remote API on every render.  We use AsyncStorage on
+  // native and localStorage on web so caching works on all platforms.
   const key = 'pensee.dailyPrompt';
-  if (typeof localStorage !== 'undefined') {
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const obj = JSON.parse(stored) as { date: string; prompt: Prompt };
-        if (obj.date === date.toISOString().slice(0, 10)) {
-          return obj.prompt;
-        }
-      }
-    } catch {
-      // ignore parse errors
+  const today = date.toISOString().slice(0, 10);
+
+  try {
+    const stored = await readCache(key);
+    if (stored) {
+      const obj = JSON.parse(stored) as { date: string; prompt: Prompt };
+      if (obj.date === today) return obj.prompt;
     }
+  } catch {
+    // ignore parse / storage errors
   }
 
   const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
   const terms = pickTerms(seed);
   const { quote, author } = await fetchQuote();
   const prompt: Prompt = { text: quote, terms, author };
-  if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(key, JSON.stringify({ date: date.toISOString().slice(0, 10), prompt }));
-    } catch {}
-  }
+
+  await writeCache(key, JSON.stringify({ date: today, prompt }));
   return prompt;
 }
 

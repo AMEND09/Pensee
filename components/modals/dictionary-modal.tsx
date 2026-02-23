@@ -204,7 +204,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBg,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    maxHeight: '90%',
+    // Use an explicit height (not just maxHeight) so that the inner
+    // ScrollView's flex:1 has a defined parent size to work against on native.
+    height: '90%',
     borderWidth: 1,
     borderColor: Colors.border,
     borderBottomWidth: 0,

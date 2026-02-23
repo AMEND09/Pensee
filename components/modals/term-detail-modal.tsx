@@ -7,6 +7,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
@@ -19,7 +20,11 @@ type Props = {
   onClose: () => void;
 };
 
+/** Fraction of screen height the definition card occupies on native. */
+const CARD_HEIGHT_RATIO = 0.70;
+
 export default function TermDetailModal({ term, visible, onClose }: Props) {
+  const { height: screenH } = useWindowDimensions();
   const [onlineEntry, setOnlineEntry] = React.useState<OnlineEntry | null>(null);
   const [loadingOnline, setLoadingOnline] = React.useState(false);
 
@@ -50,7 +55,7 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.card} onPress={() => {}}>
+        <Pressable style={[styles.card, { height: Math.round(screenH * CARD_HEIGHT_RATIO) }]} onPress={() => {}}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -192,7 +197,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     width: '100%',
     maxWidth: 480,
-    maxHeight: '75%',
+    // height is set inline from useWindowDimensions so the inner ScrollView's
+    // flex:1 has a defined parent size to render against on native.
     overflow: 'hidden',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },

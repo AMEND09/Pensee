@@ -65,9 +65,9 @@ const EDITOR_CSS = `
     font-size: 16px;
     line-height: 28px;
     color: #2c1810;
-    background-color: transparent;
+    background-color: #faf8f7;
     padding: 12px 20px 60px 56px;
-    min-height: 100vh;
+    min-height: 100%;
     background-image:
       linear-gradient(to right,
         transparent 47px,
@@ -79,7 +79,7 @@ const EDITOR_CSS = `
         transparent 27px,
         #e8e2d9 27px,
         #e8e2d9 28px);
-    background-attachment: local;
+    background-position: 0 12px;
   }
   p { margin: 0; min-height: 28px; }
   b, strong { font-family: Georgia, serif; font-weight: bold; }
@@ -500,7 +500,7 @@ export default function WritingSessionModal({
                 <RichEditor
                   ref={editorRef}
                   style={styles.editor}
-                  editorStyle={{ backgroundColor: '#ffffff', cssText: EDITOR_CSS }}
+                  editorStyle={{ backgroundColor: '#faf8f7', cssText: EDITOR_CSS }}
                   initialContentHTML=""
                   placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
                   onChange={setHtml}
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
     width: 1, height: 22, backgroundColor: '#e8e2d9',
     marginHorizontal: 12, flexShrink: 0,
   },
-  compactChipsScroll: { flex: 1 },
+  compactChipsScroll: { alignSelf: 'stretch' },
   compactChipsContent: {
     alignItems: 'center', gap: 6, paddingRight: 8, marginTop: 6,
   },
@@ -729,12 +729,12 @@ const styles = StyleSheet.create({
   // Editor
   editorArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#faf8f7',
     position: 'relative',
   },
   editor: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#faf8f7',
     fontFamily: Platform.select({ ios: 'Georgia', default: 'serif' }),
     fontSize: 16,
     lineHeight: LINE_HEIGHT,
