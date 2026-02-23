@@ -244,29 +244,20 @@ export default function WritingSessionModal({
       if (source === 'camera' && asset.uri) {
         setScanImage(asset.uri);
       }
+      const imageUri = (asset.uri ?? '') as string;
       const b64 = (asset.base64 ?? '') as string;
 
-      let recognized = await recognizeHandwriting({ base64: b64 });
-
-      // Fallback for native / unsupported runtime paths.
-      if (!recognized.trim()) {
-        const form = new FormData();
-        form.append('apikey', 'K88899267988957');
-        form.append('base64Image', `data:image/jpeg;base64,${b64}`);
-        form.append('language', 'eng');
-        form.append('isOverlayRequired', 'false');
-
-        const res = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
-        const data = await res.json();
-        recognized = (data?.ParsedResults?.[0]?.ParsedText ?? '') as string;
-      }
+      const recognized = await recognizeHandwriting({ base64: b64, uri: imageUri });
 
       if (recognized.trim()) {
         insertTextIntoEditor(recognized.trim());
       } else {
         showInfo('No text found', 'Could not read text from the image. Try a clearer photo with good lighting.');
       }
-    } catch {
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[OCR][scan] Failed to process selected image', error);
+      }
       showInfo('Error', 'Failed to process the image. Please try again.');
     } finally {
       setScanning(false);
