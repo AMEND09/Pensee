@@ -1,20 +1,20 @@
 ﻿import { Share2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { fullDate, niceDate } from '../../utils/dates';
 import { getSessions, Session } from '../../utils/storage';
-import { niceDate, fullDate } from '../../utils/dates';
 // ExportModal will be required dynamically inside the component to avoid
 // potential bundler order issues on web.  See runtime check below.
 

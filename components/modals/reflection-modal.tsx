@@ -1,20 +1,20 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { todayLocalDate } from '../../utils/dates';
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { todayLocalDate } from '../../utils/dates';
 import { Term } from '../../utils/prompts';
 import { saveSession } from '../../utils/storage';
 

@@ -162,7 +162,7 @@ async function fetchQuote(): Promise<{ quote: string; author: string }> {
 }
 
 /** Returns today's prompt. */
-import { todayLocalDate, localDateString } from './dates';
+import { localDateString, todayLocalDate } from './dates';
 
 export async function getDailyPrompt(date: Date): Promise<Prompt> {
   // simple cache so the quote stays the same during the day without
