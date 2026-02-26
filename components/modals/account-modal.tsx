@@ -18,7 +18,8 @@ import {
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../../constants/config';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
-import FeedbackModal from './feedback-modal';
+import type { FeedbackKind } from '../../utils/feedback';
+import { submitFeedbackRequest } from '../../utils/feedback';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -29,7 +30,7 @@ type Props = {
   onClose: () => void;
 };
 
-type Screen = 'main' | 'sign-in' | 'sign-up' | 'edit-name';
+type Screen = 'main' | 'sign-in' | 'sign-up' | 'edit-name' | 'feedback';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sign-In form
@@ -362,6 +363,153 @@ function EditNameForm({
   );
 }
 
+function FeedbackForm({
+  onBack,
+}: {
+  onBack: () => void;
+}) {
+  const { user } = useAuth();
+  const [kind, setKind] = useState<FeedbackKind>('bug');
+  const [title, setTitle] = useState('');
+  const [details, setDetails] = useState('');
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const detailsRemaining = Math.max(0, 10 - details.trim().length);
+
+  const handleSubmit = async () => {
+    console.log('[feedback] submit tapped', {
+      kind,
+      titleLength: title.trim().length,
+      detailsLength: details.trim().length,
+      hasEmail: !!email.trim(),
+      hasUser: !!user,
+    });
+    setBusy(true);
+    try {
+      await submitFeedbackRequest({
+        kind,
+        title,
+        details,
+        source: 'account-modal',
+        email,
+      });
+      console.log('[feedback] submit success');
+      Alert.alert('Thanks', 'Your feedback was submitted.');
+      onBack();
+    } catch (e: any) {
+      console.error('[feedback] submit failed', e);
+      Alert.alert('Could not submit', e?.message ?? 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.formContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.formHeader}>
+        <TouchableOpacity onPress={onBack} hitSlop={12}>
+          <Text style={styles.backLink}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.formTitle}>Bug Report / Feature Request</Text>
+      </View>
+
+      <View style={styles.feedbackKindRow}>
+        <TouchableOpacity
+          style={[styles.feedbackKindBtn, kind === 'bug' && styles.feedbackKindBtnActive]}
+          onPress={() => setKind('bug')}
+          disabled={busy}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.feedbackKindText, kind === 'bug' && styles.feedbackKindTextActive]}>Bug</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.feedbackKindBtn, kind === 'feature' && styles.feedbackKindBtnActive]}
+          onPress={() => setKind('feature')}
+          disabled={busy}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.feedbackKindText, kind === 'feature' && styles.feedbackKindTextActive]}>Feature</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.disclaimerText}>
+        {kind === 'bug'
+          ? 'Share what happened and how to reproduce it.'
+          : 'Describe the feature and how it would improve your writing flow.'}
+      </Text>
+
+      <Text style={styles.inputLabel}>Title</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={setTitle}
+        placeholder={kind === 'bug' ? 'Crash when opening history' : 'Add weekly writing goals'}
+        placeholderTextColor={Colors.textMuted}
+      />
+
+      <Text style={styles.inputLabel}>Details</Text>
+      <TextInput
+        style={[styles.input, styles.feedbackDetailsInput]}
+        value={details}
+        onChangeText={setDetails}
+        placeholder={
+          kind === 'bug'
+            ? 'What happened, what you expected, and the steps to reproduce.'
+            : 'What should happen, where it should appear, and why it is useful.'
+        }
+        placeholderTextColor={Colors.textMuted}
+        multiline
+        textAlignVertical="top"
+      />
+
+      {!user && (
+        <>
+          <Text style={styles.inputLabel}>Email (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={Colors.textMuted}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+        </>
+      )}
+
+      <TouchableOpacity
+        style={[styles.primaryBtn, busy && styles.disabled]}
+        onPress={handleSubmit}
+        disabled={busy}
+        activeOpacity={0.85}
+      >
+        {busy ? (
+          <ActivityIndicator color={Colors.textOnAccent} />
+        ) : (
+          <Text style={styles.primaryBtnText}>Submit</Text>
+        )}
+      </TouchableOpacity>
+
+      <View style={styles.feedbackCounterWrap}>
+        <Text
+          style={[
+            styles.feedbackCounterText,
+            detailsRemaining === 0 && styles.feedbackCounterReady,
+          ]}
+        >
+          {detailsRemaining === 0
+            ? 'Ready to submit'
+            : `${detailsRemaining} more character${detailsRemaining === 1 ? '' : 's'} needed`}
+        </Text>
+      </View>
+    </ScrollView>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main screen (signed in)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -514,6 +662,11 @@ export default function AccountModal({ visible, onClose }: Props) {
   const { user, signOut, deleteAccount } = useAuth();
   const [screen, setScreen] = useState<Screen>('main');
 
+  const openFeedbackScreen = () => {
+    console.log('[feedback] open requested from account modal');
+    setScreen('feedback');
+  };
+
   const handleClose = () => {
     setScreen('main');
     onClose();
@@ -525,7 +678,6 @@ export default function AccountModal({ visible, onClose }: Props) {
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   const handleDeleteAccount = () => {
@@ -578,7 +730,7 @@ export default function AccountModal({ visible, onClose }: Props) {
                 <NotSignedIn
                   onSignIn={() => setScreen('sign-in')}
                   onSignUp={() => setScreen('sign-up')}
-                  onOpenFeedback={() => setShowFeedback(true)}
+                  onOpenFeedback={openFeedbackScreen}
                 />
               )}
               {screen === 'main' && user && (
@@ -586,7 +738,7 @@ export default function AccountModal({ visible, onClose }: Props) {
                   onSignOut={handleSignOut}
                   onEditName={() => setScreen('edit-name')}
                   onDeleteAccount={handleDeleteAccount}
-                  onOpenFeedback={() => setShowFeedback(true)}
+                  onOpenFeedback={openFeedbackScreen}
                 />
               )}
               {screen === 'sign-in' && (
@@ -607,16 +759,13 @@ export default function AccountModal({ visible, onClose }: Props) {
                   onBack={() => setScreen('main')}
                 />
               )}
+              {screen === 'feedback' && (
+                <FeedbackForm onBack={() => setScreen('main')} />
+              )}
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
-
-      <FeedbackModal
-        visible={showFeedback}
-        onClose={() => setShowFeedback(false)}
-        source="account-modal"
-      />
 
       {/* delete confirmation modal */}
       <Modal
@@ -989,6 +1138,46 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: Spacing.md,
+  },
+  feedbackKindRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  feedbackKindBtn: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.cardBg,
+  },
+  feedbackKindBtnActive: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.accentMuted,
+  },
+  feedbackKindText: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  feedbackKindTextActive: {
+    color: Colors.accent,
+  },
+  feedbackDetailsInput: {
+    minHeight: 120,
+  },
+  feedbackCounterWrap: {
+    alignItems: 'flex-end',
+    marginTop: Spacing.sm,
+  },
+  feedbackCounterText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  feedbackCounterReady: {
+    color: Colors.accent,
   },
   legalSep: {
     fontFamily: Font.serif,
