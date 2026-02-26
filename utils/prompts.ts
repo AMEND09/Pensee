@@ -162,6 +162,8 @@ async function fetchQuote(): Promise<{ quote: string; author: string }> {
 }
 
 /** Returns today's prompt. */
+import { todayLocalDate, localDateString } from './dates';
+
 export async function getDailyPrompt(date: Date): Promise<Prompt> {
   // simple cache so the quote stays the same during the day without
   // hammering the remote API repeatedly in a single session.
@@ -171,7 +173,7 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
       const stored = localStorage.getItem(key);
       if (stored) {
         const obj = JSON.parse(stored) as { date: string; prompt: Prompt };
-        if (obj.date === date.toISOString().slice(0, 10)) {
+        if (obj.date === localDateString(date)) {
           return obj.prompt;
         }
       }
@@ -186,7 +188,7 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
   const prompt: Prompt = { text: quote, terms, author };
   if (typeof localStorage !== 'undefined') {
     try {
-      localStorage.setItem(key, JSON.stringify({ date: date.toISOString().slice(0, 10), prompt }));
+      localStorage.setItem(key, JSON.stringify({ date: todayLocalDate(), prompt }));
     } catch {}
   }
   return prompt;

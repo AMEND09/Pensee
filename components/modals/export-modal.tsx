@@ -33,6 +33,12 @@ type Props = {
   terms?: { id: string; label: string }[];
   writing: string;
   wordCount: number;
+  // optional initial card template; used when opening the modal from
+  // specific contexts (e.g. double‑tap quote) to default to minimal.
+  initialTemplate?: CardTemplate;
+  // when true, hide the template selector entirely (only the initial
+  // template will be available). used by the double-tap share gesture.
+  hideTemplateSelector?: boolean;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,11 +189,8 @@ function ExportCard({
     const dynamicFont = promptFontOverride ?? promptFontSize(prompt, 42);
     return (
       <View style={card.container} nativeID="export-card">
-        <View style={card.minimalTop}>
-          <View style={card.accentLine} />
-          <Text allowFontScaling={false} style={card.ornamentLarge}>✦</Text>
-        </View>
-
+        {/* minimal card: just the prompt and optional author, no chips or
+            decorative lines/stars */}
         <View style={card.promptWrapper} onLayout={onPromptWrapperLayout}>
           <Text
             allowFontScaling={false}
@@ -201,9 +204,7 @@ function ExportCard({
           </Text>
         </View>
 
-        <View style={card.minimalBottom}>
-          <ChipRow terms={terms} />
-
+        <View style={[card.minimalBottom, { marginTop: 0 }]}>          
           {quoteAuthor ? (
             <Text allowFontScaling={false} style={card.authorText}>— {quoteAuthor}</Text>
           ) : null}
@@ -496,11 +497,18 @@ export default function ExportModal({
   terms,
   writing,
   wordCount,
+  initialTemplate,
+  hideTemplateSelector,
 }: Props) {
   const viewShotRef = useRef<ViewShot | null>(null);
   const [capturing, setCapturing] = useState(false);
-  const [template, setTemplate] = useState<CardTemplate>('quote-focus');
+  const [template, setTemplate] = useState<CardTemplate>(initialTemplate ?? 'quote-focus');
   const [previewWidth, setPreviewWidth] = useState(CARD_BASE_WIDTH);
+
+  // if parent changes initialTemplate while modal already open, update
+  useEffect(() => {
+    if (initialTemplate) setTemplate(initialTemplate);
+  }, [initialTemplate]);
 
   // dynamic font size used by the quote-only (minimal) template. we start
   // with the heuristic base size and then shrink further if the rendered text
@@ -618,6 +626,14 @@ export default function ExportModal({
     Alert.alert('Saved!', 'Your writing card has been saved to your photo library.');
   };
 
+  const handleDownload = async () => {
+    if (Platform.OS === 'web') {
+      await handleShare();
+      return;
+    }
+    await handleSaveToPhotos();
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
@@ -625,8 +641,9 @@ export default function ExportModal({
             padding gives extra breathing room top/bottom */}
         <ScrollView
           style={styles.container}
-          contentContainerStyle={{ paddingVertical: Spacing.lg }}
+          contentContainerStyle={styles.containerContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {/* Header */}
           <View style={styles.header}>
@@ -634,36 +651,55 @@ export default function ExportModal({
               <Text style={styles.eyebrow}>SHARE YOUR WRITING</Text>
               <Text style={styles.title}>Export</Text>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
-              <X size={20} color={Colors.textSecondary} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={handleDownload}
+                disabled={capturing}
+                hitSlop={12}
+                style={[styles.headerDownloadBtn, capturing && styles.disabled]}
+              >
+                {capturing ? (
+                  <ActivityIndicator size="small" color={Colors.accent} />
+                ) : (
+                  <>
+                    <Download size={14} color={Colors.accent} />
+                    <Text style={styles.headerDownloadText}>Download</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+                <X size={20} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.divider} />
 
-          {/* Template selector */}
-          <View style={styles.templateRow}>
-            {TEMPLATES.map((t) => (
-              <TouchableOpacity
-                key={t.key}
-                style={[
-                  styles.templateBtn,
-                  template === t.key && styles.templateBtnActive,
-                ]}
-                onPress={() => setTemplate(t.key)}
-                activeOpacity={0.75}
-              >
-                <Text
+          {/* Template selector (may be hidden when only one option is allowed) */}
+          {!hideTemplateSelector && (
+            <View style={styles.templateRow}>
+              {TEMPLATES.map((t) => (
+                <TouchableOpacity
+                  key={t.key}
                   style={[
-                    styles.templateBtnText,
-                    template === t.key && styles.templateBtnTextActive,
+                    styles.templateBtn,
+                    template === t.key && styles.templateBtnActive,
                   ]}
+                  onPress={() => setTemplate(t.key)}
+                  activeOpacity={0.75}
                 >
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <Text
+                    style={[
+                      styles.templateBtnText,
+                      template === t.key && styles.templateBtnTextActive,
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* Preview */}
           <View
@@ -697,8 +733,33 @@ export default function ExportModal({
 
           {/* Actions */}
           <View style={styles.actions}>
+            {/* explicit download button (duplicates web download behavior) */}
             <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnPrimary, capturing && styles.disabled]}
+              style={[
+                styles.actionBtn,
+                Platform.OS === 'web' ? styles.actionBtnPrimaryWeb : styles.actionBtnPrimary,
+                capturing && styles.disabled,
+              ]}
+              onPress={handleShare}
+              disabled={capturing}
+              activeOpacity={0.85}
+            >
+              {capturing ? (
+                <ActivityIndicator color={Colors.textOnAccent} />
+              ) : (
+                <>
+                  <Download size={16} color={Colors.textOnAccent} />
+                  <Text style={styles.actionBtnPrimaryText}>Download</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                Platform.OS === 'web' ? styles.actionBtnPrimaryWeb : styles.actionBtnPrimary,
+                capturing && styles.disabled,
+              ]}
               onPress={handleShare}
               disabled={capturing}
               activeOpacity={0.85}
@@ -748,6 +809,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     width: '100%',
     maxWidth: 420,
+    alignSelf: 'center',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
@@ -756,8 +818,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 24,
     elevation: 16,
-    paddingVertical: Spacing.lg, // give breathing room top/bottom
+    flexGrow: 0,
+    flexShrink: 1,
     maxHeight: ('90vh' as unknown) as number, // cast to satisfy RN types
+  },
+  containerContent: {
+    flexGrow: 0,
+    paddingBottom: Spacing.xs,
   },
   header: {
     flexDirection: 'row',
@@ -766,6 +833,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  headerDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.accentMuted,
+  },
+  headerDownloadText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.accent,
   },
   eyebrow: {
     fontFamily: Font.serif,
@@ -809,7 +897,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
   actionBtn: {
     flex: 1,
@@ -827,6 +915,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.28,
     shadowRadius: 6,
     elevation: 4,
+  },
+  // web-specific: remove background/border so button appears inline
+  actionBtnPrimaryWeb: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    shadowColor: 'transparent',
   },
   actionBtnPrimaryText: {
     fontFamily: Font.serifBold,

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import pb from './pocketbase';
+import { localDateString, normalizeDateString } from './dates';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -44,7 +45,9 @@ const SESSIONS_KEY = 'pensee_sessions_v2';
 function pbRecordToSession(record: Record<string, any>): Session {
   return {
     id: record['id'] as string,
-    date: (record['date'] as string) ?? '',
+    // ensure we treat the incoming value as a local calendar day regardless of
+    // the server's timezone
+    date: normalizeDateString(record['date'] as string),
     wordCount: (record['wordCount'] as number) ?? 0,
     writing: (record['writing'] as string) ?? '',
     vocab: (record['vocab'] as string) ?? '',
@@ -63,7 +66,10 @@ function pbRecordToSession(record: Record<string, any>): Session {
 }
 
 function toDateString(d: Date): string {
-  return d.toISOString().split('T')[0];
+  // previously we used toISOString() which returns the UTC day; that could
+  // push the value forward/back depending on the user's offset.  keep things
+  // in the local timezone instead.
+  return localDateString(d);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,11 +100,14 @@ export async function getSessions(): Promise<Session[]> {
 
 /** Save to PocketBase if authenticated, otherwise save locally */
 export async function saveSession(session: Omit<Session, 'id'>): Promise<Session> {
+  // make sure the date is in normalized `YYYY-MM-DD` form before storing
+  const normalizedDate = normalizeDateString(session.date);
+
   if (pb.authStore.isValid) {
     try {
       const record = await pb.collection('sessions').create({
         user: pb.authStore.record?.id,
-        date: session.date,
+        date: normalizedDate,
         wordCount: session.wordCount,
         writing: session.writing,
         vocab: session.vocab,
@@ -120,6 +129,7 @@ export async function saveSession(session: Omit<Session, 'id'>): Promise<Session
   const sessions = await getLocalSessions();
   const newSession: Session = {
     ...session,
+    date: normalizedDate,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   };
   await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify([...sessions, newSession]));
@@ -137,7 +147,8 @@ async function getLocalSessions(): Promise<Session[]> {
 
 export async function getSessionByDate(dateStr: string): Promise<Session | null> {
   const sessions = await getSessions();
-  return sessions.find((s) => s.date === dateStr) ?? null;
+  const norm = normalizeDateString(dateStr);
+  return sessions.find((s) => s.date === norm) ?? null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

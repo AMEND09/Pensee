@@ -1,5 +1,5 @@
 ﻿
-import { Flame, History, User as UserIcon } from 'lucide-react-native';
+import { Flame, History, User as UserIcon, Share2 } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccountModal from '../../components/modals/account-modal';
-import ExportModal from '../../components/modals/export-modal';
+import ExportModal, { CardTemplate } from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
 import QuoteModal from '../../components/modals/quote-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
@@ -260,6 +260,7 @@ export default function HomeScreen() {
   const [showQuote, setShowQuote] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [exportInitialTemplate, setExportInitialTemplate] = useState<CardTemplate | undefined>(undefined);
   const [streak, setStreak] = useState(0);
 
   // Writing session data
@@ -561,6 +562,20 @@ export default function HomeScreen() {
               </Animated.View>
 
               {/* Reel — visible while spinning, hidden after */}
+
+              {/* share button overlay for static quote */}
+              {!isSpinning && (
+                <TouchableOpacity
+                  style={styles.quoteShareBtn}
+                  onPress={() => {
+                    if (!prompt) return;
+                    setExportInitialTemplate('quote-only');
+                    setShowExport(true);
+                  }}
+                >
+                  <Share2 size={20} color={Colors.accent} />
+                </TouchableOpacity>
+              )}
               <Animated.View
                 style={[
                   StyleSheet.absoluteFillObject,
@@ -704,12 +719,14 @@ export default function HomeScreen() {
 
       <ExportModal
         visible={showExport}
-        onClose={() => setShowExport(false)}
+        onClose={() => { setShowExport(false); setExportInitialTemplate(undefined); }}
         prompt={sessionPrompt?.text ?? prompt?.text ?? ''}
         quoteAuthor={sessionPrompt?.author ?? prompt?.author}
         terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
         writing={sessionWriting}
         wordCount={sessionWordCount}
+        initialTemplate={exportInitialTemplate}
+        hideTemplateSelector={!!exportInitialTemplate}
       />
     </SafeAreaView>
   );
@@ -836,6 +853,19 @@ const styles = StyleSheet.create({
   quoteTouchable: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
+  },
+  quoteShareBtn: {
+    position: 'absolute',
+    bottom: Spacing.sm,
+    right: Spacing.sm,
+    backgroundColor: Colors.cardBg,
+    borderRadius: Radius.full,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   quoteWrapper: {
     width: '100%',

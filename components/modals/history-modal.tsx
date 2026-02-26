@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Session } from '../../utils/storage';
+import { niceDate, fullDate } from '../../utils/dates';
 // ExportModal will be required dynamically inside the component to avoid
 // potential bundler order issues on web.  See runtime check below.
 
@@ -35,24 +36,6 @@ type FlatItem = {
 // Helpers
 // 
 
-function niceDate(d: string) {
-  const [year, month, day] = d.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return {
-    weekday: date.toLocaleDateString('en-US', { weekday: 'short' }),
-    monthDay: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  };
-}
-
-function fullDate(d: string) {
-  const [year, month, day] = d.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 function stripHtml(html: string): string {
   return html

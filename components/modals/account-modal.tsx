@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Mail, Trash2, User, X } from 'lucide-react-native';
+import { LogIn, LogOut, Mail, MessageSquare, Trash2, User, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,6 +18,7 @@ import {
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../../constants/config';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
+import FeedbackModal from './feedback-modal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -369,12 +370,12 @@ function AccountMain({
   onSignOut,
   onEditName,
   onDeleteAccount,
-  onClose,
+  onOpenFeedback,
 }: {
   onSignOut: () => void;
   onEditName: () => void;
   onDeleteAccount: () => void;
-  onClose: () => void;
+  onOpenFeedback: () => void;
 }) {
   const { user } = useAuth();
 
@@ -428,6 +429,14 @@ function AccountMain({
         <Text style={styles.rowChevron}>›</Text>
       </TouchableOpacity>
 
+      <View style={styles.rowDivider} />
+
+      <TouchableOpacity style={styles.row} onPress={onOpenFeedback} activeOpacity={0.7}>
+        <MessageSquare size={18} color={Colors.textSecondary} />
+        <Text style={styles.rowLabel}>Bug Report / Feature Request</Text>
+        <Text style={styles.rowChevron}>›</Text>
+      </TouchableOpacity>
+
       <View style={styles.divider} />
 
       <TouchableOpacity style={styles.row} onPress={onSignOut} activeOpacity={0.7}>
@@ -452,9 +461,11 @@ function AccountMain({
 function NotSignedIn({
   onSignIn,
   onSignUp,
+  onOpenFeedback,
 }: {
   onSignIn: () => void;
   onSignUp: () => void;
+  onOpenFeedback: () => void;
 }) {
   const openPrivacy = () => Linking.openURL(PRIVACY_POLICY_URL);
   const openTerms = () => Linking.openURL(TERMS_URL);
@@ -476,6 +487,10 @@ function NotSignedIn({
 
       <TouchableOpacity style={styles.secondaryBtn} onPress={onSignUp} activeOpacity={0.85}>
         <Text style={styles.secondaryBtnText}>Create Account</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryBtn} onPress={onOpenFeedback} activeOpacity={0.85}>
+        <Text style={styles.secondaryBtnText}>Bug Report / Feature Request</Text>
       </TouchableOpacity>
 
       <View style={styles.legalRow}>
@@ -510,6 +525,7 @@ export default function AccountModal({ visible, onClose }: Props) {
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   const handleDeleteAccount = () => {
@@ -562,6 +578,7 @@ export default function AccountModal({ visible, onClose }: Props) {
                 <NotSignedIn
                   onSignIn={() => setScreen('sign-in')}
                   onSignUp={() => setScreen('sign-up')}
+                  onOpenFeedback={() => setShowFeedback(true)}
                 />
               )}
               {screen === 'main' && user && (
@@ -569,7 +586,7 @@ export default function AccountModal({ visible, onClose }: Props) {
                   onSignOut={handleSignOut}
                   onEditName={() => setScreen('edit-name')}
                   onDeleteAccount={handleDeleteAccount}
-                  onClose={handleClose}
+                  onOpenFeedback={() => setShowFeedback(true)}
                 />
               )}
               {screen === 'sign-in' && (
@@ -594,6 +611,12 @@ export default function AccountModal({ visible, onClose }: Props) {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+
+      <FeedbackModal
+        visible={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        source="account-modal"
+      />
 
       {/* delete confirmation modal */}
       <Modal

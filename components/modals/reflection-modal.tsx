@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
+import { todayLocalDate } from '../../utils/dates';
 import {
   Alert,
   Image,
@@ -123,7 +124,7 @@ export default function ReflectionModal({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayLocalDate();
       await saveSession({
         date: today,
         wordCount,

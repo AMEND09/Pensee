@@ -3,11 +3,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     KeyboardAvoidingView,
     Modal,
+    NativeSyntheticEvent,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
+    TextInputScrollEventData,
     TouchableOpacity,
     useWindowDimensions,
     View,
@@ -119,6 +121,7 @@ export default function WritingSessionModal({
   });
   const [scanning, setScanning] = useState(false);
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
+  const [editorScrollY, setEditorScrollY] = useState(0);
 
   const editorRef = useRef<TextInput | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -159,6 +162,7 @@ export default function WritingSessionModal({
       setTimerActive(false);
       setFinished(false);
       setScanImage(undefined);
+      setEditorScrollY(0);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
@@ -174,6 +178,18 @@ export default function WritingSessionModal({
     setTimerActive(false);
     onComplete(text, wordCount, scanImage);
   }, [text, wordCount, onComplete, scanImage]);
+
+  const handleEditorScroll = useCallback((event: NativeSyntheticEvent<TextInputScrollEventData>) => {
+    const nativeScrollY = event.nativeEvent?.contentOffset?.y;
+    const webScrollY = (event.nativeEvent as any)?.target?.scrollTop;
+    const nextScrollY = typeof nativeScrollY === 'number'
+      ? nativeScrollY
+      : typeof webScrollY === 'number'
+        ? webScrollY
+        : 0;
+
+    setEditorScrollY(Math.max(0, nextScrollY));
+  }, []);
 
   const handleDone = () => {
     if (wordCount === 0) {
@@ -346,20 +362,25 @@ export default function WritingSessionModal({
 
             {/* Editor area */}
             <View style={styles.editorArea}>
-              {Platform.OS !== 'web' && (
-                <View pointerEvents="none" style={styles.nativeNotebookLines}>
-                  <View style={styles.nativeMarginLine} />
+              <View pointerEvents="none" style={styles.notebookLines}>
+                <View style={styles.marginLine} />
+                <View
+                  style={[
+                    styles.rulesLayer,
+                    { transform: [{ translateY: -(editorScrollY % LINE_HEIGHT) }] },
+                  ]}
+                >
                   {Array.from({ length: lineCount }).map((_, i) => (
                     <View
                       key={i}
                       style={[
-                        styles.nativeRule,
+                        styles.rule,
                         { top: 12 + i * LINE_HEIGHT + (LINE_HEIGHT - 1) },
                       ]}
                     />
                   ))}
                 </View>
-              )}
+              </View>
 
               <TextInput
                 ref={editorRef}
@@ -367,6 +388,8 @@ export default function WritingSessionModal({
                 multiline
                 value={text}
                 onChangeText={setText}
+                onScroll={handleEditorScroll}
+                scrollEventThrottle={16}
                 editable={timerActive}
                 placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
                 textAlignVertical="top"
@@ -645,10 +668,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     position: 'relative',
   },
-  nativeNotebookLines: {
+  notebookLines: {
     ...StyleSheet.absoluteFillObject,
   },
-  nativeMarginLine: {
+  marginLine: {
     position: 'absolute',
     top: 0,
     bottom: 0,
@@ -656,7 +679,10 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: 'rgba(185,100,80,0.18)',
   },
-  nativeRule: {
+  rulesLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  rule: {
     position: 'absolute',
     left: 0,
     right: 0,
@@ -675,22 +701,6 @@ const styles = StyleSheet.create({
   },
   webEditor: {
     backgroundColor: '#ffffff',
-    backgroundImage: `
-      linear-gradient(to right,
-        transparent 47px,
-        rgba(185,100,80,0.18) 47px,
-        rgba(185,100,80,0.18) 48px,
-        transparent 48px),
-      repeating-linear-gradient(to bottom,
-        transparent,
-        transparent ${LINE_HEIGHT - 1}px,
-        #e8e2d9 ${LINE_HEIGHT - 1}px,
-        #e8e2d9 ${LINE_HEIGHT}px)
-    `,
-    backgroundAttachment: 'local',
-    // web-only CSS property, TS doesn't know about it
-    // @ts-ignore
-    backgroundPositionY: '12px',
   },
 
   // Pre-start overlay
