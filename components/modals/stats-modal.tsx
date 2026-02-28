@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Stats } from '../../utils/storage';
+import { getGrowthInsight, getAverageTTR } from '../../utils/analytics';
 import { rhetoricalDefinitions } from '../../utils/prompts';
 
 type Props = {
@@ -173,6 +174,17 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
                   </Text>
                   <Text style={styles.quoteAttrib}> Margaret Atwood</Text>
                 </View>
+
+                {/* Growth Insight */}
+                {stats && (() => {
+                  const insight = getGrowthInsight(stats.totalSessions, stats.streak, stats.averageWordCount);
+                  return insight ? (
+                    <View style={styles.insightBlock}>
+                      <Text style={styles.insightLabel}>GROWTH INSIGHT</Text>
+                      <Text style={styles.insightText}>{insight}</Text>
+                    </View>
+                  ) : null;
+                })()}
 
                 {/* Device Coverage */}
                 <View style={styles.divider} />
@@ -399,6 +411,30 @@ const styles = StyleSheet.create({
     fontFamily: Font.serif,
     fontSize: 12,
     color: Colors.textMuted,
+  },
+  insightBlock: {
+    backgroundColor: '#f0ebe6',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.accent,
+    borderRadius: Radius.sm,
+    padding: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  insightLabel: {
+    fontFamily: Font.serif,
+    fontSize: 9,
+    letterSpacing: 1.3,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
+  },
+  insightText: {
+    fontFamily: Font.serifItalic,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    lineHeight: 22,
+    fontStyle: 'italic',
   },
   deviceCoverageRow: {
     flexDirection: 'row',

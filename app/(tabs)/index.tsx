@@ -31,6 +31,7 @@ import { getSettings } from '../../utils/settings';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
 import { getCuratedSelection } from '../../utils/curation';
 import { getStats, getSessions, Stats } from '../../utils/storage';
+import { getWeeklySessionCount, getWeeklySessionDays, calculateTTR, getTTRLabel } from '../../utils/analytics';
 import pb from '../../utils/pocketbase';
 
 // 
@@ -277,6 +278,9 @@ export default function HomeScreen() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newDevices, setNewDevices] = useState<Set<string>>(new Set());
   const [sessionDurationMinutes, setSessionDurationMinutes] = useState(10);
+  const [weeklyCount, setWeeklyCount] = useState(0);
+  const [weeklyDays, setWeeklyDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
+  const [weeklyGoal, setWeeklyGoal] = useState(5);
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
@@ -284,7 +288,10 @@ export default function HomeScreen() {
 
   // Load session duration from settings
   const loadSessionDuration = useCallback(() => {
-    getSettings().then(s => setSessionDurationMinutes(s.sessionDurationMinutes));
+    getSettings().then(s => {
+      setSessionDurationMinutes(s.sessionDurationMinutes);
+      setWeeklyGoal(s.weeklyGoalSessions);
+    });
   }, []);
 
   useEffect(() => {
@@ -374,6 +381,10 @@ export default function HomeScreen() {
           setPastExcerpt({ text: excerpt, date: s.date });
         }
       }
+      const wc = getWeeklySessionCount(sessions);
+      const wd = getWeeklySessionDays(sessions);
+      setWeeklyCount(wc);
+      setWeeklyDays(wd);
     });
   }, []);
 
@@ -762,6 +773,22 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Weekly Progress */}
+        <View style={styles.weeklyProgress}>
+          <View style={styles.weeklyHeader}>
+            <Text style={styles.weeklyLabel}>THIS WEEK</Text>
+            <Text style={styles.weeklyCount}>{weeklyCount}/{weeklyGoal}</Text>
+          </View>
+          <View style={styles.weeklyDots}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+              <View key={i} style={styles.weeklyDotCol}>
+                <View style={[styles.weeklyDot, weeklyDays[i] && styles.weeklyDotFilled]} />
+                <Text style={styles.weeklyDayLabel}>{day}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* Emotional Primer */}
         <View style={styles.primerSection}>
           {pastExcerpt ? (
@@ -903,6 +930,16 @@ export default function HomeScreen() {
         >
           <Text style={styles.celebrationCount}>{sessionWordCount}</Text>
           <Text style={styles.celebrationLabel}>words</Text>
+          {sessionWriting && (() => {
+            const ttr = calculateTTR(sessionWriting);
+            const { label } = getTTRLabel(ttr);
+            return (
+              <View style={styles.celebrationTTR}>
+                <Text style={styles.celebrationTTRScore}>{Math.round(ttr * 100)}%</Text>
+                <Text style={styles.celebrationTTRLabel}>vocabulary diversity · {label}</Text>
+              </View>
+            );
+          })()}
           <Text style={styles.celebrationAffirmation}>
             {celebrationAffirmations[Math.floor(Math.random() * celebrationAffirmations.length)]}
           </Text>
@@ -1186,6 +1223,55 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
+  //  Weekly Progress
+  weeklyProgress: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+  },
+  weeklyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  weeklyLabel: {
+    fontFamily: Font.serif,
+    fontSize: 10,
+    letterSpacing: 1.3,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  weeklyCount: {
+    fontFamily: Font.serifBold,
+    fontSize: 14,
+    color: Colors.accent,
+  },
+  weeklyDots: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  weeklyDotCol: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  weeklyDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    backgroundColor: 'transparent',
+  },
+  weeklyDotFilled: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  weeklyDayLabel: {
+    fontFamily: Font.serif,
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+
   //  Celebration
   celebrationOverlay: {
     flex: 1,
@@ -1215,6 +1301,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 28,
     fontStyle: 'italic',
+  },
+  celebrationTTR: {
+    marginTop: Spacing.lg,
+    alignItems: 'center',
+  },
+  celebrationTTRScore: {
+    fontFamily: Font.serifBold,
+    fontSize: 28,
+    color: Colors.textPrimary,
+  },
+  celebrationTTRLabel: {
+    fontFamily: Font.serif,
+    fontSize: 13,
+    color: Colors.textMuted,
+    marginTop: 2,
   },
 
   //  Intention Setter
