@@ -850,7 +850,13 @@ export default function HomeScreen() {
         terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
         image={sessionImage}
         onClose={() => setShowReflection(false)}
-        onSave={() => {}}
+        onSave={() => {
+          refreshStats();
+          getSessions().then(sessions => {
+            setWeeklyCount(getWeeklySessionCount(sessions));
+            setWeeklyDays(getWeeklySessionDays(sessions));
+          });
+        }}
         onExport={() => setShowExport(true)}
       />
 

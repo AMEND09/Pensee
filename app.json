@@ -23,7 +23,9 @@
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
-            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
           }
         ]
       }
@@ -41,7 +43,8 @@
     },
     "web": {
       "output": "spa",
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/logo.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
