@@ -9,6 +9,11 @@ export type Settings = {
 
 const SETTINGS_KEY = 'pensee_settings';
 
+export const MIN_SESSION_DURATION = 1;
+export const MAX_SESSION_DURATION = 60;
+export const MIN_WEEKLY_GOAL = 1;
+export const MAX_WEEKLY_GOAL = 7;
+
 export const DEFAULT_SETTINGS: Settings = {
   sessionDurationMinutes: 10,
   weeklyGoalSessions: 5,
@@ -31,8 +36,8 @@ export async function updateSettings(partial: Partial<Settings>): Promise<Settin
   const next = { ...current, ...partial };
   
   // Clamp values
-  next.sessionDurationMinutes = Math.max(1, Math.min(60, next.sessionDurationMinutes));
-  next.weeklyGoalSessions = Math.max(1, Math.min(7, next.weeklyGoalSessions));
+  next.sessionDurationMinutes = Math.max(MIN_SESSION_DURATION, Math.min(MAX_SESSION_DURATION, next.sessionDurationMinutes));
+  next.weeklyGoalSessions = Math.max(MIN_WEEKLY_GOAL, Math.min(MAX_WEEKLY_GOAL, next.weeklyGoalSessions));
   
   await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
   
