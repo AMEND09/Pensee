@@ -50,3 +50,7 @@ marketing
 playwright-report
 test-results
 dist
+
+# Tesseract training data (large binary files, installed via npm dev deps)
+*.traineddata
+*.traineddata.gz
