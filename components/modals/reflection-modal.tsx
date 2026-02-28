@@ -36,61 +36,6 @@ type Props = {
   onExport?: () => void;
 };
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  minLines,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  minLines?: number;
-}) {
-  return (
-    <View style={fieldStyles.wrapper}>
-      <Text style={fieldStyles.label}>{label}</Text>
-      <TextInput
-        style={[fieldStyles.input, { minHeight: (minLines ?? 3) * 28 }]}
-        multiline
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={Colors.textMuted}
-        textAlignVertical="top"
-      />
-    </View>
-  );
-}
-
-const fieldStyles = StyleSheet.create({
-  wrapper: {
-    marginBottom: Spacing.md,
-  },
-  label: {
-    fontFamily: Font.serif,
-    fontSize: 10,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    color: Colors.textMuted,
-    marginBottom: Spacing.sm,
-  },
-  input: {
-    backgroundColor: Colors.inputBg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontFamily: Font.serif,
-    fontSize: 15,
-    color: Colors.textPrimary,
-    lineHeight: 26,
-  },
-});
-
 export default function ReflectionModal({
   visible,
   onClose,
@@ -103,21 +48,16 @@ export default function ReflectionModal({
   onSave,
   onExport,
 }: Props) {
-  const [vocab, setVocab] = useState('');
-  const [devices, setDevices] = useState('');
-  const [good, setGood] = useState('');
-  const [bad, setBad] = useState('');
-  const [thoughts, setThoughts] = useState('');
+  const [deviceRatings, setDeviceRatings] = useState<Record<string, 'natural' | 'forced'>>({});
+  const [sessionFeel, setSessionFeel] = useState<number>(0);
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
-
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
 
   const reset = () => {
-    setVocab('');
-    setDevices('');
-    setGood('');
-    setBad('');
-    setThoughts('');
+    setDeviceRatings({});
+    setSessionFeel(0);
+    setNote('');
     setScanImage(undefined);
   };
 
@@ -129,11 +69,11 @@ export default function ReflectionModal({
         date: today,
         wordCount,
         writing,
-        vocab,
-        devices,
-        good,
-        bad,
-        thoughts,
+        vocab: JSON.stringify(deviceRatings),
+        devices: sessionFeel > 0 ? String(sessionFeel) : '',
+        good: '',
+        bad: '',
+        thoughts: note,
         prompt,
         quoteAuthor,
         terms,
@@ -155,8 +95,11 @@ export default function ReflectionModal({
     }
   }, [visible, image]);
 
+  const hasUnsavedData =
+    Object.keys(deviceRatings).length > 0 || sessionFeel > 0 || note || scanImage;
+
   const handleClose = () => {
-    if (vocab || devices || good || bad || thoughts || scanImage) {
+    if (hasUnsavedData) {
       Alert.alert(
         'Discard Reflection?',
         'Your unsaved reflection will be lost.',
@@ -225,46 +168,83 @@ export default function ReflectionModal({
                 </View>
               ) : null}
 
-              <Field
-                label="Vocabulary used"
-                value={vocab}
-                onChange={setVocab}
-                placeholder="Which words from today's prompt did you incorporate?"
-                minLines={2}
-              />
-              <Field
-                label="Rhetorical devices used"
-                value={devices}
-                onChange={setDevices}
-                placeholder="Which devices did you employ, and how?"
-                minLines={2}
-              />
+              {/* Section 1 — Device ratings */}
+              {terms.length > 0 && (
+                <View style={styles.deviceSection}>
+                  <Text style={styles.sectionEyebrow}>DEVICE RATINGS</Text>
+                  {terms.map((term) => (
+                    <View key={term.id} style={styles.deviceRatingRow}>
+                      <Text style={styles.deviceName}>{term.label}</Text>
+                      <View style={styles.ratingChips}>
+                        <TouchableOpacity
+                          style={[
+                            styles.ratingChip,
+                            styles.naturalChip,
+                            deviceRatings[term.id] === 'natural' && styles.naturalChipActive,
+                          ]}
+                          onPress={() => setDeviceRatings(prev => ({...prev, [term.id]: 'natural'}))}
+                        >
+                          <Text style={[
+                            styles.ratingChipText,
+                            styles.naturalChipText,
+                            deviceRatings[term.id] === 'natural' && styles.naturalChipTextActive,
+                          ]}>felt natural</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.ratingChip,
+                            styles.forcedChip,
+                            deviceRatings[term.id] === 'forced' && styles.forcedChipActive,
+                          ]}
+                          onPress={() => setDeviceRatings(prev => ({...prev, [term.id]: 'forced'}))}
+                        >
+                          <Text style={[
+                            styles.ratingChipText,
+                            styles.forcedChipText,
+                            deviceRatings[term.id] === 'forced' && styles.forcedChipTextActive,
+                          ]}>felt forced</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
 
-              <View style={styles.sectionDivider}>
-                <Text style={styles.sectionLabel}>REFLECTIONS</Text>
+              {/* Section 2 — Session feel */}
+              <View style={styles.feelSection}>
+                <Text style={styles.sectionEyebrow}>SESSION FEEL</Text>
+                <View style={styles.feelRow}>
+                  <Text style={styles.feelLabel}>struggled{'\n'}to start</Text>
+                  <View style={styles.feelDots}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <TouchableOpacity
+                        key={n}
+                        style={[
+                          styles.feelDot,
+                          sessionFeel === n && styles.feelDotActive,
+                        ]}
+                        onPress={() => setSessionFeel(n)}
+                      >
+                        {sessionFeel === n && <View style={styles.feelDotInner} />}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={styles.feelLabel}>couldn't{'\n'}stop</Text>
+                </View>
               </View>
 
-              <Field
-                label="What went well"
-                value={good}
-                onChange={setGood}
-                placeholder="What felt natural, vivid, or effective in your writing?"
-                minLines={3}
-              />
-              <Field
-                label="What didn't"
-                value={bad}
-                onChange={setBad}
-                placeholder="What felt forced, unclear, or underdeveloped?"
-                minLines={3}
-              />
-              <Field
-                label="Personal thoughts"
-                value={thoughts}
-                onChange={setThoughts}
-                placeholder="Any other feelings, observations, or ideas to hold onto"
-                minLines={3}
-              />
+              {/* Section 3 — Optional note */}
+              <View style={styles.noteSection}>
+                <TextInput
+                  style={styles.noteInput}
+                  multiline
+                  value={note}
+                  onChangeText={setNote}
+                  placeholder="Anything worth holding onto from today?"
+                  placeholderTextColor={Colors.textMuted}
+                  textAlignVertical="top"
+                />
+              </View>
 
               {/* Save button */}
               <TouchableOpacity
@@ -422,19 +402,140 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.textMuted,
   },
-  sectionDivider: {
-    marginVertical: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-    paddingTop: Spacing.md,
+
+  /* Section 1 — Device ratings */
+  deviceSection: {
+    marginBottom: Spacing.lg,
   },
-  sectionLabel: {
+  sectionEyebrow: {
     fontFamily: Font.serif,
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
     color: Colors.textMuted,
+    marginBottom: Spacing.md,
   },
+  deviceRatingRow: {
+    marginBottom: Spacing.sm,
+  },
+  deviceName: {
+    fontFamily: Font.serifBold,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  ratingChips: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  ratingChip: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderWidth: 1,
+  },
+  ratingChipText: {
+    fontFamily: Font.serif,
+    fontSize: 13,
+  },
+  naturalChip: {
+    backgroundColor: '#e8f5e1',
+    borderColor: '#c5debb',
+  },
+  naturalChipActive: {
+    backgroundColor: '#d4ecc9',
+    borderColor: '#4a7c3f',
+  },
+  naturalChipText: {
+    color: '#4a7c3f',
+  },
+  naturalChipTextActive: {
+    fontFamily: Font.serifBold,
+    color: '#3a6331',
+  },
+  forcedChip: {
+    backgroundColor: '#f0ece8',
+    borderColor: '#d8d0c8',
+  },
+  forcedChipActive: {
+    backgroundColor: '#e4ddd5',
+    borderColor: '#7a6055',
+  },
+  forcedChipText: {
+    color: '#7a6055',
+  },
+  forcedChipTextActive: {
+    fontFamily: Font.serifBold,
+    color: '#5c4539',
+  },
+
+  /* Section 2 — Session feel */
+  feelSection: {
+    marginBottom: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+    paddingTop: Spacing.md,
+  },
+  feelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+  },
+  feelLabel: {
+    fontFamily: Font.serif,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 15,
+    width: 64,
+  },
+  feelDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  feelDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feelDotActive: {
+    borderColor: Colors.accent,
+  },
+  feelDotInner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.accent,
+  },
+
+  /* Section 3 — Optional note */
+  noteSection: {
+    marginBottom: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+    paddingTop: Spacing.md,
+  },
+  noteInput: {
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontFamily: Font.serif,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 26,
+    minHeight: 84,
+  },
+
+  /* Buttons */
   saveButton: {
     backgroundColor: Colors.accent,
     borderRadius: Radius.md,
