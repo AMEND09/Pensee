@@ -9,7 +9,7 @@ export type Settings = {
 
 const SETTINGS_KEY = 'pensee_settings';
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   sessionDurationMinutes: 10,
   weeklyGoalSessions: 5,
   showComplexityScore: true,

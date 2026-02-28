@@ -18,7 +18,7 @@ import {
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../../constants/config';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
-import { Settings, getSettings, updateSettings } from '../../utils/settings';
+import { Settings, DEFAULT_SETTINGS, getSettings, updateSettings } from '../../utils/settings';
 import type { FeedbackKind } from '../../utils/feedback';
 import { submitFeedbackRequest } from '../../utils/feedback';
 
@@ -774,11 +774,7 @@ export default function AccountModal({ visible, onClose, onSettingsChanged }: Pr
   const { user, signOut, deleteAccount } = useAuth();
   const [screen, setScreen] = useState<Screen>('main');
 
-  const [settings, setSettingsState] = useState<Settings>({
-    sessionDurationMinutes: 10,
-    weeklyGoalSessions: 5,
-    showComplexityScore: true,
-  });
+  const [settings, setSettingsState] = useState<Settings>({ ...DEFAULT_SETTINGS });
 
   useEffect(() => {
     if (visible) {
