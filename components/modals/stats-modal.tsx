@@ -9,9 +9,9 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { getSessions, Stats } from '../../utils/storage';
-import { getGrowthInsight, getAverageTTR } from '../../utils/analytics';
 import { rhetoricalDefinitions } from '../../utils/prompts';
 
 type Props = {
@@ -58,18 +58,22 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
   useEffect(() => {
     if (!visible) return;
     getSessions().then(sessions => {
-      const allDeviceNames = Object.keys(rhetoricalDefinitions);
+      const allDeviceNames = new Set(Object.keys(rhetoricalDefinitions));
       const practiced = new Set<string>();
       const ratings: Record<string, string[]> = {};
 
       sessions.forEach(s => {
-        // terms from session
-        s.terms?.forEach(t => practiced.add(t.id));
-        // try to parse device ratings from vocab field (new format)
+        // terms from session — only count rhetorical devices, not vocab words
+        s.terms?.forEach(t => {
+          if (allDeviceNames.has(t.id)) practiced.add(t.id);
+        });
+        // also extract device names from vocab field (device ratings JSON)
+        // vocab stores: {"metaphor":"natural","anaphora":"forced",...}
         try {
           const parsed = JSON.parse(s.vocab);
           if (typeof parsed === 'object' && parsed !== null) {
             Object.entries(parsed).forEach(([key, val]) => {
+              if (allDeviceNames.has(key)) practiced.add(key);
               if (!ratings[key]) ratings[key] = [];
               ratings[key].push(val as string);
             });
@@ -175,17 +179,6 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
                   <Text style={styles.quoteAttrib}> Margaret Atwood</Text>
                 </View>
 
-                {/* Growth Insight */}
-                {stats && (() => {
-                  const insight = getGrowthInsight(stats.totalSessions, stats.streak, stats.averageWordCount);
-                  return insight ? (
-                    <View style={styles.insightBlock}>
-                      <Text style={styles.insightLabel}>GROWTH INSIGHT</Text>
-                      <Text style={styles.insightText}>{insight}</Text>
-                    </View>
-                  ) : null;
-                })()}
-
                 {/* Device Coverage */}
                 <View style={styles.divider} />
                 <TouchableOpacity
@@ -199,12 +192,49 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
                       {practicedDevices.length} of {Object.keys(rhetoricalDefinitions).length}
                     </Text>
                   </View>
-                  {/* Simple progress ring using a View */}
-                  <View style={styles.progressRing}>
-                    <Text style={styles.progressRingText}>
-                      {Math.round((practicedDevices.length / Object.keys(rhetoricalDefinitions).length) * 100)}%
-                    </Text>
-                  </View>
+                  {/* Progress ring with SVG arc */}
+                  {(() => {
+                    const total = Object.keys(rhetoricalDefinitions).length;
+                    const pct = total > 0 ? practicedDevices.length / total : 0;
+                    const size = 52;
+                    const strokeWidth = 3;
+                    const radius = (size - strokeWidth) / 2;
+                    const circumference = 2 * Math.PI * radius;
+                    const strokeDashoffset = circumference * (1 - pct);
+                    return (
+                      <View style={styles.progressRingOuter}>
+                        <Svg width={size} height={size}>
+                          {/* Background track */}
+                          <Circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            stroke={Colors.borderLight}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                          />
+                          {/* Filled arc */}
+                          <Circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            stroke={Colors.accent}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                            strokeDasharray={`${circumference}`}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                          />
+                        </Svg>
+                        <View style={styles.progressRingCenter}>
+                          <Text style={styles.progressRingText}>
+                            {Math.round(pct * 100)}%
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </TouchableOpacity>
 
                 {showDeviceLibrary && (
@@ -412,30 +442,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
   },
-  insightBlock: {
-    backgroundColor: '#f0ebe6',
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
-    borderRadius: Radius.sm,
-    padding: Spacing.md,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  insightLabel: {
-    fontFamily: Font.serif,
-    fontSize: 9,
-    letterSpacing: 1.3,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    marginBottom: Spacing.xs,
-  },
-  insightText: {
-    fontFamily: Font.serifItalic,
-    fontSize: 14,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-    fontStyle: 'italic',
-  },
   deviceCoverageRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -457,13 +463,15 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
   },
-  progressRing: {
+  progressRingOuter: {
     width: 52,
     height: 52,
-    borderRadius: 26,
-    borderWidth: 3,
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentMuted,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressRingCenter: {
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -32,32 +32,23 @@ export function localDateString(d: Date): string {
  */
 export function normalizeDateString(raw?: string | null): string {
   if (!raw) return '';
-  // If the value is already a plain calendar date we can return it directly.
-  // Otherwise parse it and convert to the local timezone before formatting.
-  //
-  // The subtlety here is what we mean by "normalize to the user's timezone".
-  //
-  // * For a bare YYYY-MM-DD string we assume it already represents the local
-  //   date the user intended and do not shift it.
-  // * If the server supplied a full ISO timestamp (e.g. created/updated fields)
-  //   the date should be interpreted in the user's zone so that midnight UTC
-  //   doesn't appear as the wrong calendar day.  Parsing to `Date` and then
-  //   serializing with `localDateString` accomplishes that.
-  //
-  // This covers both cases: textual dates are left alone and timestamps are
-  // shifted to local time.
 
-  const maybeDate = raw.slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(maybeDate)) {
-    return maybeDate;
+  // If the value is exactly a bare YYYY-MM-DD string (10 chars, no time/zone
+  // suffix) we treat it as the local calendar date the user intended.
+  const trimmed = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
   }
 
-  const dt = new Date(raw);
+  // Otherwise the value includes time and/or timezone information (e.g. a
+  // PocketBase Date field or ISO timestamp).  Parse it and convert to the
+  // user's local timezone so that a server in a different zone doesn't shift
+  // the calendar day.
+  const dt = new Date(trimmed);
   if (isNaN(dt.getTime())) {
-    // parsing failed; fall back to the raw prefix to avoid throwing
-    return maybeDate;
+    // parsing failed; fall back to the first 10 characters
+    return trimmed.slice(0, 10);
   }
-  // format in local timezone
   return localDateString(dt);
 }
 
