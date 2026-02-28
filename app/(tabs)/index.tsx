@@ -512,14 +512,7 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>Quote Prompt</Text>
-            <TouchableOpacity
-              style={[styles.shuffleBtn, (isSpinning || loadingPrompt) && styles.shuffleBtnDisabled]}
-              onPress={handleShuffle}
-              activeOpacity={0.7}
-              disabled={isSpinning || loadingPrompt}
-            >
-              <Text style={styles.shuffleBtnText}>{isSpinning ? 'spinning' : '  shuffle'}</Text>
-            </TouchableOpacity>
+
           </View>
 
           <View style={styles.cardDivider} />
