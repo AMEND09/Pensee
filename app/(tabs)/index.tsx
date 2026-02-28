@@ -1,5 +1,6 @@
 ﻿
-import { Flame, History, Share2, Settings as SettingsIcon } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Flame, History, Settings as SettingsIcon, Share2 } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -15,7 +16,6 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import AccountModal from '../../components/modals/account-modal';
 import ExportModal, { CardTemplate } from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
@@ -26,13 +26,13 @@ import StatsModal from '../../components/modals/stats-modal';
 import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { calculateCTTR, calculateReadability, calculateSentenceVariety, getCTTRLabel, getWeeklySessionCount, getWeeklySessionDays } from '../../utils/analytics';
 import { useAuth } from '../../utils/auth';
-import { getSettings } from '../../utils/settings';
-import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
 import { getCuratedSelection } from '../../utils/curation';
-import { getStats, getSessions, Stats } from '../../utils/storage';
-import { getWeeklySessionCount, getWeeklySessionDays, calculateTTR, getTTRLabel } from '../../utils/analytics';
 import pb from '../../utils/pocketbase';
+import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
+import { getSettings } from '../../utils/settings';
+import { getSessions, getStats, Stats } from '../../utils/storage';
 
 // 
 // Constants
@@ -743,9 +743,6 @@ export default function HomeScreen() {
           <View style={styles.termRow}>
             {prompt?.terms?.map((term, i) => (
               <View key={i} style={styles.termChipWrapper}>
-                {newDevices.has(term.id) && (
-                  <Text style={styles.newDeviceLabel}>New</Text>
-                )}
               <TouchableOpacity
                 style={styles.termChip}
                 onPress={() => !isSpinning && openTermDetail(term)}
@@ -768,6 +765,9 @@ export default function HomeScreen() {
                   reverse
                 />
               </TouchableOpacity>
+                {newDevices.has(term.id) && (
+                  <Text style={styles.newDeviceLabel}>New</Text>
+                )}
               </View>
             ))}
           </View>
@@ -937,12 +937,26 @@ export default function HomeScreen() {
           <Text style={styles.celebrationCount}>{sessionWordCount}</Text>
           <Text style={styles.celebrationLabel}>words</Text>
           {sessionWriting && (() => {
-            const ttr = calculateTTR(sessionWriting);
-            const { label } = getTTRLabel(ttr);
+            const cttr = calculateCTTR(sessionWriting);
+            const { label: cttrLabel } = getCTTRLabel(cttr);
+            const readability = calculateReadability(sessionWriting);
+            const variety = calculateSentenceVariety(sessionWriting);
             return (
               <View style={styles.celebrationTTR}>
-                <Text style={styles.celebrationTTRScore}>{Math.round(ttr * 100)}%</Text>
-                <Text style={styles.celebrationTTRLabel}>vocabulary diversity · {label}</Text>
+                <Text style={styles.celebrationTTRScore}>{cttr.toFixed(1)}</Text>
+                <Text style={styles.celebrationTTRLabel}>vocabulary diversity · {cttrLabel}</Text>
+                {readability && (
+                  <View style={styles.celebrationMetricRow}>
+                    <Text style={styles.celebrationMetricValue}>{readability.fleschReadingEase}</Text>
+                    <Text style={styles.celebrationTTRLabel}>readability · {readability.gradeLabel}</Text>
+                  </View>
+                )}
+                {variety && (
+                  <View style={styles.celebrationMetricRow}>
+                    <Text style={styles.celebrationMetricValue}>{variety.lengthVariation}</Text>
+                    <Text style={styles.celebrationTTRLabel}>sentence variety · {variety.label}</Text>
+                  </View>
+                )}
               </View>
             );
           })()}
@@ -1152,7 +1166,7 @@ const styles = StyleSheet.create({
     color: Colors.accent,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    marginBottom: 2,
+    marginTop: 2,
   },
   termChipWrapper: {
     alignItems: 'center',
@@ -1322,6 +1336,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textMuted,
     marginTop: 2,
+  },
+  celebrationMetricRow: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+  },
+  celebrationMetricValue: {
+    fontFamily: Font.serifBold,
+    fontSize: 22,
+    color: Colors.textPrimary,
   },
 
   //  Intention Setter

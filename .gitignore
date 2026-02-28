@@ -46,4 +46,5 @@ app-example
 # remotion reel renders
 marketing/reel-remotion/renders/
 marketing
-.playwright-mcpdist
+.playwright-mcp
+dist

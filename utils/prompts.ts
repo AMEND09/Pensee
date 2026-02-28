@@ -16,29 +16,108 @@ export type Prompt = {
 // Prompt source data
 // ─────────────────────────────────────────────────────────────────────────────
 
-// quotes are intentionally short (15–50 characters) so they fit nicely
-// in the word‑reel UI.  Feel free to add or swap as you wish.
+// Writing-focused prompts: evocative fragments, craft observations, and
+// provocations designed to spark creative writing. Intentionally short so
+// they fit in the word-reel UI.
 const creativeWords: string[] = [
-  'To be or not to be',
-  'I think, therefore I am',
-  'The only constant is change',
-  'Less is more',
-  'Time heals all wounds',
-  'Fortune favors the bold',
-  'Knowledge is power',
-  'All that glitters is not gold',
-  'Act in haste, repent at leisure',
-  'The pen is mightier than the sword',
-  'A picture is worth a thousand words',
-  'Birds of a feather flock together',
-  'You reap what you sow',
-  'The early bird catches the worm',
-  'Where there’s smoke there’s fire',
-  'Every cloud has a silver lining',
-  'Out of sight, out of mind',
-  'Curiosity killed the cat',
-  'The apple doesn’t fall far',
-  'When it rains it pours',
+  // Craft & process
+  'Write toward what frightens you',
+  'Begin in the middle of things',
+  'A sentence can hold a world',
+  'Delete the first paragraph',
+  'Every revision is a new draft',
+  'What does silence sound like?',
+  'Write the scene you keep avoiding',
+  'The first draft is just the door',
+  'Find the tension, then stay there',
+  'Let the sentence surprise you',
+  'Write what you don\'t understand yet',
+  'Describe what you can\'t see',
+  'Follow the strange detail',
+  'Make the familiar unfamiliar',
+  'End where you least expect to',
+  'Trust the fragment',
+  'Notice what you notice',
+  'Say less than you know',
+  'The rough draft owes nothing',
+  'Turn an abstraction into a body',
+
+  // Sensory & observational
+  'The light at four in the afternoon',
+  'A room no one has entered in years',
+  'What does memory taste like?',
+  'The last thing you heard before sleep',
+  'An object that outlived its owner',
+  'A color you have no name for',
+  'The weight of an unopened letter',
+  'Rain on a surface you rarely consider',
+  'Describe a sound from childhood',
+  'The texture of waiting',
+  'Shadows at the edge of a doorway',
+  'A city seen from above, in fog',
+  'The smell of a place you left',
+  'The space between two heartbeats',
+  'Dust on something once treasured',
+
+  // Provocations & paradox
+  'What if forgetting were a gift?',
+  'The kindness in saying no',
+  'A lie that told the truth',
+  'Strength in the smallest gesture',
+  'The gentleness of an ending',
+  'What does courage look like at rest?',
+  'Something beautiful and ruined',
+  'The distance between almost and enough',
+  'A question with no right answer',
+  'What you carry without knowing',
+
+  // Voice & perspective
+  'Write a letter you\'ll never send',
+  'Speak as someone who just arrived',
+  'Tell a story in only questions',
+  'Describe yourself to a stranger',
+  'The confession of an inanimate thing',
+  'Write from inside a photograph',
+  'Give a voice to the witness',
+  'The monologue of a locked door',
+  'Argue the opposite of what you believe',
+  'Narrate a moment from its ending',
+
+  // Rhythm & language
+  'Build a sentence with no adjectives',
+  'Write a paragraph of one-word sentences',
+  'Let punctuation carry the meaning',
+  'Find music in a list of plain things',
+  'Write without the word I',
+  'A sentence that takes a full breath',
+  'Stack three metaphors, then choose one',
+  'Replace every abstract noun with a concrete one',
+  'Write a sentence that turns a corner',
+  'Let the rhythm do the work',
+
+  // Time & memory
+  'A day that changed nothing and everything',
+  'The moment before you understood',
+  'Something you learned too late',
+  'The future someone promised you',
+  'What yesterday looked like from here',
+  'A minute that lasted an hour',
+  'The version of you from ten years ago',
+  'What remains after the flood recedes',
+  'Write today as if it were already history',
+  'The thing you almost forgot',
+
+  // Image & metaphor starters
+  'The architecture of a conversation',
+  'Roots beneath pavement, still growing',
+  'A bridge between two silences',
+  'The gravity of small decisions',
+  'Embers after the argument',
+  'An atlas of places that no longer exist',
+  'The cartography of a scar',
+  'Ice forming on still water',
+  'A compass that points inward',
+  'The archaeology of a drawer',
 ];
 
 
@@ -162,8 +241,8 @@ async function fetchQuote(): Promise<{ quote: string; author: string }> {
 }
 
 /** Returns today's prompt. */
-import { localDateString, todayLocalDate } from './dates';
 import { getCuratedSelection } from './curation';
+import { localDateString, todayLocalDate } from './dates';
 
 export async function getDailyPrompt(date: Date): Promise<Prompt> {
   const key = 'pensee.dailyPrompt';

@@ -546,17 +546,21 @@ export default function ExportModal({
 
   const captureImage = async (): Promise<string | null> => {
     if (Platform.OS === 'web') {
-      // view-shot is not supported on web; use html2canvas to render the
-      // card element to a canvas and return a data URL.
+      // view-shot isn't available on web; use html-to-image to render the
+      // DOM node directly. this supports SVG gradients and produces a data URL.
       setCapturing(true);
       try {
         const el = document.getElementById('export-card');
         if (!el) return null;
-        const html2canvasModule = await import('html2canvas');
-        const canvas = await html2canvasModule.default(el as HTMLElement, { backgroundColor: null });
-        return canvas.toDataURL('image/png');
+        const htmlToImage = await import('html-to-image');
+        const dataUrl = await htmlToImage.toPng(el as HTMLElement, {
+          cacheBust: true,
+          backgroundColor: null,
+          pixelRatio: 2,
+        });
+        return dataUrl;
       } catch (err) {
-        console.error('html2canvas capture failed', err);
+        console.error('html-to-image capture failed', err);
         return null;
       } finally {
         setCapturing(false);

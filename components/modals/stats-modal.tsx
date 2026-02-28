@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import { getSessions, Stats } from '../../utils/storage';
 import { rhetoricalDefinitions } from '../../utils/prompts';
+import { getSessions, Stats } from '../../utils/storage';
 
 type Props = {
   visible: boolean;
@@ -39,8 +39,39 @@ function StatBlock({
   );
 }
 
-// Static set of all rhetorical device names (never changes at runtime)
-const ALL_DEVICE_NAMES = new Set(Object.keys(rhetoricalDefinitions));
+function normalizeDeviceName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function parseDeviceRatings(raw: unknown): Record<string, string> {
+  if (!raw) return {};
+
+  let parsed: unknown = raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return {};
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      return {};
+    }
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+  const out: Record<string, string> = {};
+  Object.entries(parsed as Record<string, unknown>).forEach(([key, value]) => {
+    if (!key || typeof value !== 'string') return;
+    out[key] = value;
+  });
+  return out;
+}
+
+const DEVICE_NAMES = Object.keys(rhetoricalDefinitions);
+const ALL_DEVICE_NAMES = new Set(DEVICE_NAMES);
+const DEVICE_NAME_BY_NORMALIZED = new Map(
+  DEVICE_NAMES.map((name) => [normalizeDeviceName(name), name]),
+);
 
 export default function StatsModal({ visible, onClose, stats: propStats, loading: propLoading }: Props) {
   // stats and loading are supplied by parent
@@ -67,25 +98,26 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
       sessions.forEach(s => {
         // terms from session — only count rhetorical devices, not vocab words
         s.terms?.forEach(t => {
-          if (ALL_DEVICE_NAMES.has(t.id)) practiced.add(t.id);
+          const canonical = DEVICE_NAME_BY_NORMALIZED.get(normalizeDeviceName(t.id || t.label || ''));
+          if (canonical && ALL_DEVICE_NAMES.has(canonical)) {
+            practiced.add(canonical);
+          }
         });
         // also extract device names from vocab field (device ratings JSON)
         // vocab stores: {"metaphor":"natural","anaphora":"forced",...}
-        try {
-          const parsed = JSON.parse(s.vocab);
-          if (typeof parsed === 'object' && parsed !== null) {
-            Object.entries(parsed).forEach(([key, val]) => {
-              if (ALL_DEVICE_NAMES.has(key)) practiced.add(key);
-              if (!ratings[key]) ratings[key] = [];
-              ratings[key].push(val as string);
-            });
-          }
-        } catch {}
+        const parsed = parseDeviceRatings(s.vocab);
+        Object.entries(parsed).forEach(([key, val]) => {
+          const canonical = DEVICE_NAME_BY_NORMALIZED.get(normalizeDeviceName(key));
+          if (!canonical) return;
+          practiced.add(canonical);
+          if (!ratings[canonical]) ratings[canonical] = [];
+          ratings[canonical].push(String(val).toLowerCase());
+        });
       });
 
       const MASTERY_THRESHOLD = 2;
       const mastery: Record<string, 'natural' | 'developing' | 'untouched'> = {};
-      ALL_DEVICE_NAMES.forEach(name => {
+      DEVICE_NAMES.forEach(name => {
         if (!practiced.has(name)) {
           mastery[name] = 'untouched';
         } else if (ratings[name] && ratings[name].filter(r => r === 'natural').length >= MASTERY_THRESHOLD) {
@@ -95,7 +127,7 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
         }
       });
 
-      setPracticedDevices(Array.from(practiced));
+      setPracticedDevices(Array.from(practiced).sort());
       setDeviceMastery(mastery);
     });
   }, [visible]);
@@ -191,12 +223,12 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
                   <View style={styles.deviceCoverageLeft}>
                     <Text style={styles.deviceCoverageTitle}>Devices Practiced</Text>
                     <Text style={styles.deviceCoverageCount}>
-                      {practicedDevices.length} of {Object.keys(rhetoricalDefinitions).length}
+                      {practicedDevices.length} of {DEVICE_NAMES.length}
                     </Text>
                   </View>
                   {/* Progress ring with SVG arc */}
                   {(() => {
-                    const total = Object.keys(rhetoricalDefinitions).length;
+                    const total = DEVICE_NAMES.length;
                     const pct = total > 0 ? practicedDevices.length / total : 0;
                     const size = 52;
                     const strokeWidth = 3;
@@ -256,7 +288,7 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
                       </View>
                     </View>
                     <View style={styles.deviceGrid}>
-                      {Object.keys(rhetoricalDefinitions).map((name) => {
+                      {DEVICE_NAMES.map((name) => {
                         const status = deviceMastery[name] || 'untouched';
                         return (
                           <View

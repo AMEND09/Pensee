@@ -46,6 +46,26 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function parseVocabRatings(vocab?: string): Array<{ term: string; rating: string }> {
+  if (!vocab) return [];
+  try {
+    const parsed = JSON.parse(vocab) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object') return [];
+    return Object.entries(parsed)
+      .filter(([term, rating]) => term.trim().length > 0 && typeof rating === 'string')
+      .map(([term, rating]) => ({ term, rating: rating as string }));
+  } catch {
+    return [];
+  }
+}
+
+function getVocabRatingStatus(rating: string): 'natural' | 'developing' | 'untouched' {
+  const normalized = rating.trim().toLowerCase();
+  if (normalized === 'natural') return 'natural';
+  if (normalized === 'forced' || normalized === 'developing') return 'developing';
+  return 'untouched';
+}
+
 /** Flatten a sorted (newest-first) session list into FlatItems with day-grouping metadata */
 function flatten(sessions: Session[]): FlatItem[] {
   if (sessions.length === 0) return [];
@@ -195,6 +215,54 @@ function DetailSection({ label, value }: { label: string; value?: string }) {
   );
 }
 
+function VocabularySection({ vocab }: { vocab?: string }) {
+  const ratings = parseVocabRatings(vocab);
+  if (ratings.length === 0) return null;
+
+  return (
+    <View style={styles.detailSection}>
+      <Text style={styles.detailLabel}>VOCABULARY</Text>
+      <View style={styles.detailChips}>
+        {ratings.map(({ term, rating }) => (
+          (() => {
+            const status = getVocabRatingStatus(rating);
+            return (
+              <View
+                key={term}
+                style={[
+                  styles.chip,
+                  status === 'natural' && styles.vocabChipNatural,
+                  status === 'developing' && styles.vocabChipDeveloping,
+                  status === 'untouched' && styles.vocabChipUntouched,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    status === 'natural' && styles.vocabChipTextNatural,
+                    status === 'developing' && styles.vocabChipTextDeveloping,
+                  ]}
+                >
+                  {term}
+                </Text>
+                <Text
+                  style={[
+                    styles.vocabRatingText,
+                    status === 'natural' && styles.vocabChipTextNatural,
+                    status === 'developing' && styles.vocabChipTextDeveloping,
+                  ]}
+                >
+                  {' '}· {rating}
+                </Text>
+              </View>
+            );
+          })()
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // 
 // Session Detail Screen
 // 
@@ -242,7 +310,7 @@ function SessionDetail({ session, onBack }: { session: Session; onBack: () => vo
         <View style={styles.detailDivider} />
 
         <DetailSection label="WRITING" value={session.writing} />
-        <DetailSection label="VOCABULARY" value={session.vocab} />
+        <VocabularySection vocab={session.vocab} />
         <DetailSection label="LITERARY DEVICES" value={session.devices} />
         <DetailSection label="WHAT WENT WELL" value={session.good} />
         <DetailSection label="WHAT COULD IMPROVE" value={session.bad} />
@@ -852,5 +920,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     lineHeight: 27,
+  },
+  vocabRatingText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  vocabChipNatural: {
+    backgroundColor: '#e8f5e1',
+    borderColor: '#b8d4a8',
+  },
+  vocabChipDeveloping: {
+    backgroundColor: '#fdf3e3',
+    borderColor: '#e4c98a',
+  },
+  vocabChipUntouched: {
+    backgroundColor: Colors.bg,
+    borderColor: Colors.border,
+  },
+  vocabChipTextNatural: {
+    color: '#4a7c3f',
+  },
+  vocabChipTextDeveloping: {
+    color: '#a0762a',
   },
 });

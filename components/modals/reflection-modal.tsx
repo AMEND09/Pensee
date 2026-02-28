@@ -14,10 +14,11 @@ import {
     View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { calculateCTTR, calculateReadability, calculateSentenceVariety, getCTTRLabel } from '../../utils/analytics';
+import { incrementSessionCount, updateDeviceRating } from '../../utils/curation';
 import { todayLocalDate } from '../../utils/dates';
 import { Term } from '../../utils/prompts';
 import { saveSession } from '../../utils/storage';
-import { updateDeviceRating, incrementSessionCount } from '../../utils/curation';
 
 type Props = {
   visible: boolean;
@@ -158,6 +159,49 @@ export default function ReflectionModal({
                 </View>
               )}
             </View>
+
+            <View style={styles.divider} />
+
+            {/* Writing Analysis */}
+            {writing && writing.trim().length > 0 && (() => {
+              const cttr = calculateCTTR(writing);
+              const { label: cttrLabel } = getCTTRLabel(cttr);
+              const readability = calculateReadability(writing);
+              const variety = calculateSentenceVariety(writing);
+              const hasMetrics = cttr > 0 || readability || variety;
+              if (!hasMetrics) return null;
+              return (
+                <View style={styles.analysisSection}>
+                  <Text style={styles.sectionEyebrow}>WRITING ANALYSIS</Text>
+                  <View style={styles.analysisGrid}>
+                    {cttr > 0 && (
+                      <View style={styles.analysisItem}>
+                        <Text style={styles.analysisValue}>{cttr.toFixed(1)}</Text>
+                        <Text style={styles.analysisLabel}>Vocabulary{"\n"}{cttrLabel}</Text>
+                      </View>
+                    )}
+                    {readability && (
+                      <View style={styles.analysisItem}>
+                        <Text style={styles.analysisValue}>{readability.fleschReadingEase}</Text>
+                        <Text style={styles.analysisLabel}>Readability{"\n"}{readability.gradeLabel}</Text>
+                      </View>
+                    )}
+                    {variety && (
+                      <View style={styles.analysisItem}>
+                        <Text style={styles.analysisValue}>{variety.lengthVariation}</Text>
+                        <Text style={styles.analysisLabel}>Sentence Variety{"\n"}{variety.label}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {readability && (
+                    <Text style={styles.analysisHint}>{readability.description}</Text>
+                  )}
+                  {variety && (
+                    <Text style={styles.analysisHint}>{variety.description}</Text>
+                  )}
+                </View>
+              );
+            })()}
 
             <View style={styles.divider} />
 
@@ -557,6 +601,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textOnAccent,
     letterSpacing: 0.3,
+  },
+
+  /* Writing Analysis */
+  analysisSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  analysisGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  analysisItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  analysisValue: {
+    fontFamily: Font.serifBold,
+    fontSize: 24,
+    color: Colors.accent,
+    lineHeight: 30,
+  },
+  analysisLabel: {
+    fontFamily: Font.serif,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  analysisHint: {
+    fontFamily: Font.serifItalic,
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 2,
   },
   exportButton: {
     borderWidth: 1,
