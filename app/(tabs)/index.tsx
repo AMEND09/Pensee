@@ -1,5 +1,5 @@
 ﻿
-import { Flame, History, Share2, User as UserIcon } from 'lucide-react-native';
+import { Flame, History, Share2, Settings as SettingsIcon } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -27,6 +27,7 @@ import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
+import { getSettings } from '../../utils/settings';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
 import { getCuratedSelection } from '../../utils/curation';
 import { getStats, getSessions, Stats } from '../../utils/storage';
@@ -274,10 +275,20 @@ export default function HomeScreen() {
   const [sessionIntention, setSessionIntention] = useState<string>('');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newDevices, setNewDevices] = useState<Set<string>>(new Set());
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(10);
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
   const [sessionImage, setSessionImage] = useState<string | undefined>(undefined);
+
+  // Load session duration from settings
+  const loadSessionDuration = useCallback(() => {
+    getSettings().then(s => setSessionDurationMinutes(s.sessionDurationMinutes));
+  }, []);
+
+  useEffect(() => {
+    loadSessionDuration();
+  }, [loadSessionDuration]);
 
   // Show initial prompt in reels once it's loaded from the API
   useEffect(() => {
@@ -594,7 +605,7 @@ export default function HomeScreen() {
               onPress={() => setShowAccount(true)}
               activeOpacity={0.75}
             >
-              <UserIcon size={16} color={Colors.textSecondary} />
+              <SettingsIcon size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -779,6 +790,7 @@ export default function HomeScreen() {
         prompt={sessionPrompt}
         onClose={() => setShowSession(false)}
         onComplete={handleSessionComplete}
+        sessionDurationMinutes={sessionDurationMinutes}
       />
 
       <ReflectionModal
@@ -821,6 +833,7 @@ export default function HomeScreen() {
       <AccountModal
         visible={showAccount}
         onClose={() => setShowAccount(false)}
+        onSettingsChanged={loadSessionDuration}
       />
 
       <ExportModal

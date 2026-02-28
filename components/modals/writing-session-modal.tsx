@@ -95,6 +95,7 @@ type Props = {
   onClose: () => void;
   // scanImage will be provided if the user snapped a photo during the session
   onComplete: (writing: string, wordCount: number, scanImage?: string) => void;
+  sessionDurationMinutes?: number;
 };
 
 export default function WritingSessionModal({
@@ -102,9 +103,11 @@ export default function WritingSessionModal({
   prompt,
   onClose,
   onComplete,
+  sessionDurationMinutes,
 }: Props) {
+  const sessionSeconds = (sessionDurationMinutes ?? 10) * 60;
   const [text, setText] = useState('');
-  const [seconds, setSeconds] = useState(SESSION_SECONDS);
+  const [seconds, setSeconds] = useState(sessionSeconds);
   const [timerActive, setTimerActive] = useState(false);
   const [finished, setFinished] = useState(false);
   const [showDict, setShowDict] = useState(false);
@@ -158,7 +161,7 @@ export default function WritingSessionModal({
   useEffect(() => {
     if (visible) {
       setText('');
-      setSeconds(SESSION_SECONDS);
+      setSeconds(sessionSeconds);
       setTimerActive(false);
       setFinished(false);
       setScanImage(undefined);
@@ -166,7 +169,7 @@ export default function WritingSessionModal({
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
-  }, [visible]);
+  }, [visible, sessionSeconds]);
 
   const handleStart = () => {
     setTimerActive(true);
@@ -301,7 +304,7 @@ export default function WritingSessionModal({
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                {!timerActive && !finished && seconds === SESSION_SECONDS && (
+                {!timerActive && !finished && seconds === sessionSeconds && (
                   <TouchableOpacity style={styles.startBtn} onPress={handleStart}>
                     <Text style={styles.startBtnText}>Start</Text>
                   </TouchableOpacity>
