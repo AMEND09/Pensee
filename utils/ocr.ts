@@ -109,7 +109,7 @@ async function getTesseractWorker() {
 
       const worker = await createWorker('eng');
       await worker.setParameters({
-        tessedit_pageseg_mode: '6',   // Assume uniform block of text
+        tessedit_pageseg_mode: '6',   // PSM.SINGLE_BLOCK – uniform block of text
       });
       return worker;
     } catch (error) {
