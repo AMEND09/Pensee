@@ -1,5 +1,5 @@
 import { LogIn, LogOut, Mail, MessageSquare, Trash2, User, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -18,6 +18,7 @@ import {
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../../constants/config';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
+import { Settings, getSettings, updateSettings } from '../../utils/settings';
 import type { FeedbackKind } from '../../utils/feedback';
 import { submitFeedbackRequest } from '../../utils/feedback';
 
@@ -28,6 +29,7 @@ import { submitFeedbackRequest } from '../../utils/feedback';
 type Props = {
   visible: boolean;
   onClose: () => void;
+  onSettingsChanged?: () => void;
 };
 
 type Screen = 'main' | 'sign-in' | 'sign-up' | 'edit-name' | 'feedback';
@@ -511,6 +513,97 @@ function FeedbackForm({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Settings section (shared between signed-in and not-signed-in)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SettingsSection({
+  settings,
+  onUpdate,
+}: {
+  settings: Settings;
+  onUpdate: (partial: Partial<Settings>) => void;
+}) {
+  const durationOptions = [5, 10, 15, 20, 30];
+  const goalOptions = [1, 2, 3, 4, 5, 6, 7];
+
+  return (
+    <View style={styles.settingsSection}>
+      <Text style={styles.sectionLabel}>WRITING SESSION</Text>
+
+      <View style={styles.settingRow}>
+        <Text style={styles.settingLabel}>Session Duration</Text>
+        <View style={styles.chipRow}>
+          {durationOptions.map((min) => (
+            <TouchableOpacity
+              key={min}
+              style={[
+                styles.settingChip,
+                settings.sessionDurationMinutes === min && styles.settingChipActive,
+              ]}
+              onPress={() => onUpdate({ sessionDurationMinutes: min })}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.settingChipText,
+                  settings.sessionDurationMinutes === min && styles.settingChipTextActive,
+                ]}
+              >
+                {min}m
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.rowDivider} />
+
+      <View style={styles.settingRow}>
+        <Text style={styles.settingLabel}>Weekly Goal</Text>
+        <View style={styles.chipRow}>
+          {goalOptions.map((n) => (
+            <TouchableOpacity
+              key={n}
+              style={[
+                styles.settingChip,
+                settings.weeklyGoalSessions === n && styles.settingChipActive,
+              ]}
+              onPress={() => onUpdate({ weeklyGoalSessions: n })}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.settingChipText,
+                  settings.weeklyGoalSessions === n && styles.settingChipTextActive,
+                ]}
+              >
+                {n}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.settingHint}>
+          {settings.weeklyGoalSessions} session{settings.weeklyGoalSessions !== 1 ? 's' : ''} per week
+        </Text>
+      </View>
+
+      <View style={styles.rowDivider} />
+
+      <TouchableOpacity
+        style={styles.settingRow}
+        onPress={() => onUpdate({ showComplexityScore: !settings.showComplexityScore })}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.settingLabel}>Show Vocabulary Score</Text>
+        <View style={[styles.toggle, settings.showComplexityScore && styles.toggleActive]}>
+          <View style={[styles.toggleDot, settings.showComplexityScore && styles.toggleDotActive]} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main screen (signed in)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -519,11 +612,15 @@ function AccountMain({
   onEditName,
   onDeleteAccount,
   onOpenFeedback,
+  settings,
+  onUpdateSettings,
 }: {
   onSignOut: () => void;
   onEditName: () => void;
   onDeleteAccount: () => void;
   onOpenFeedback: () => void;
+  settings: Settings;
+  onUpdateSettings: (partial: Partial<Settings>) => void;
 }) {
   const { user } = useAuth();
 
@@ -542,6 +639,10 @@ function AccountMain({
 
       <Text style={styles.userName}>{user?.name || 'Your Account'}</Text>
       <Text style={styles.userEmail}>{user?.email}</Text>
+
+      <View style={styles.divider} />
+
+      <SettingsSection settings={settings} onUpdate={onUpdateSettings} />
 
       <View style={styles.divider} />
 
@@ -610,16 +711,27 @@ function NotSignedIn({
   onSignIn,
   onSignUp,
   onOpenFeedback,
+  settings,
+  onUpdateSettings,
 }: {
   onSignIn: () => void;
   onSignUp: () => void;
   onOpenFeedback: () => void;
+  settings: Settings;
+  onUpdateSettings: (partial: Partial<Settings>) => void;
 }) {
   const openPrivacy = () => Linking.openURL(PRIVACY_POLICY_URL);
   const openTerms = () => Linking.openURL(TERMS_URL);
 
   return (
-    <View style={styles.notSignedInContainer}>
+    <ScrollView
+      contentContainerStyle={styles.notSignedInContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      <SettingsSection settings={settings} onUpdate={onUpdateSettings} />
+
+      <View style={styles.divider} />
+
       <View style={styles.avatarCircle}>
         <User size={32} color={Colors.textMuted} />
       </View>
@@ -650,7 +762,7 @@ function NotSignedIn({
           <Text style={styles.legalLink}>Terms of Service</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -658,9 +770,27 @@ function NotSignedIn({
 // Modal shell
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function AccountModal({ visible, onClose }: Props) {
+export default function AccountModal({ visible, onClose, onSettingsChanged }: Props) {
   const { user, signOut, deleteAccount } = useAuth();
   const [screen, setScreen] = useState<Screen>('main');
+
+  const [settings, setSettingsState] = useState<Settings>({
+    sessionDurationMinutes: 10,
+    weeklyGoalSessions: 5,
+    showComplexityScore: true,
+  });
+
+  useEffect(() => {
+    if (visible) {
+      getSettings().then(setSettingsState);
+    }
+  }, [visible]);
+
+  const handleUpdateSettings = useCallback(async (partial: Partial<Settings>) => {
+    const next = await updateSettings(partial);
+    setSettingsState(next);
+    onSettingsChanged?.();
+  }, [onSettingsChanged]);
 
   const openFeedbackScreen = () => {
     console.log('[feedback] open requested from account modal');
@@ -717,7 +847,7 @@ export default function AccountModal({ visible, onClose }: Props) {
 
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.headerTitle}>Account</Text>
+                <Text style={styles.headerTitle}>Settings</Text>
                 <TouchableOpacity onPress={handleClose} hitSlop={12} style={styles.closeBtn}>
                   <X size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
@@ -731,6 +861,8 @@ export default function AccountModal({ visible, onClose }: Props) {
                   onSignIn={() => setScreen('sign-in')}
                   onSignUp={() => setScreen('sign-up')}
                   onOpenFeedback={openFeedbackScreen}
+                  settings={settings}
+                  onUpdateSettings={handleUpdateSettings}
                 />
               )}
               {screen === 'main' && user && (
@@ -739,6 +871,8 @@ export default function AccountModal({ visible, onClose }: Props) {
                   onEditName={() => setScreen('edit-name')}
                   onDeleteAccount={handleDeleteAccount}
                   onOpenFeedback={openFeedbackScreen}
+                  settings={settings}
+                  onUpdateSettings={handleUpdateSettings}
                 />
               )}
               {screen === 'sign-in' && (
@@ -1183,5 +1317,74 @@ const styles = StyleSheet.create({
     fontFamily: Font.serif,
     fontSize: 12,
     color: Colors.textMuted,
+  },
+
+  // Settings section
+  settingsSection: {
+    width: '100%',
+    marginBottom: Spacing.sm,
+  },
+  settingRow: {
+    paddingVertical: Spacing.md,
+    width: '100%',
+  },
+  settingLabel: {
+    fontFamily: Font.serif,
+    fontSize: 16,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  settingHint: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  settingChip: {
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  settingChipActive: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  settingChipText: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  settingChipTextActive: {
+    color: Colors.textOnAccent,
+  },
+  toggle: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.border,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleActive: {
+    backgroundColor: Colors.accent,
+  },
+  toggleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.white,
+  },
+  toggleDotActive: {
+    alignSelf: 'flex-end',
   },
 });
