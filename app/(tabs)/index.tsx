@@ -31,6 +31,7 @@ import { getSettings } from '../../utils/settings';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
 import { getCuratedSelection } from '../../utils/curation';
 import { getStats, getSessions, Stats } from '../../utils/storage';
+import pb from '../../utils/pocketbase';
 
 // 
 // Constants
@@ -330,16 +331,36 @@ export default function HomeScreen() {
   }, [showStats, refreshStats]);
 
   useEffect(() => {
-    AsyncStorage.getItem('pensee_onboarding_complete').then(val => {
-      if (!val) {
-        setShowOnboarding(true);
+    const checkOnboarding = async () => {
+      // Check local first
+      const local = await AsyncStorage.getItem('pensee_onboarding_complete');
+      if (local) return;
+
+      // Check PocketBase if authenticated
+      if (pb.authStore.isValid && pb.authStore.record?.id) {
+        try {
+          const record = await pb.collection('users').getOne(pb.authStore.record.id);
+          if (record['onboardingComplete']) {
+            await AsyncStorage.setItem('pensee_onboarding_complete', 'true');
+            return;
+          }
+        } catch {}
       }
-    });
+
+      setShowOnboarding(true);
+    };
+    checkOnboarding();
   }, []);
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false);
     AsyncStorage.setItem('pensee_onboarding_complete', 'true');
+    // Sync to PocketBase
+    if (pb.authStore.isValid && pb.authStore.record?.id) {
+      pb.collection('users').update(pb.authStore.record.id, {
+        onboardingComplete: true,
+      }).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {

@@ -9,6 +9,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import pb from './pocketbase';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -140,6 +141,18 @@ const FORCED_INTERVAL = 3;         // Return within 3 days if rated forced
 const MASTERY_THRESHOLD = 2;       // Consecutive natural ratings to consider mastered
 
 export async function getSessionCount(): Promise<number> {
+  // Try PocketBase first if authenticated
+  if (pb.authStore.isValid && pb.authStore.record?.id) {
+    try {
+      const record = await pb.collection('users').getOne(pb.authStore.record.id);
+      if (record['sessionCount'] != null) {
+        const count = Number(record['sessionCount']);
+        // Sync local
+        await AsyncStorage.setItem(SESSION_COUNT_KEY, String(count));
+        return count;
+      }
+    } catch {}
+  }
   try {
     const val = await AsyncStorage.getItem(SESSION_COUNT_KEY);
     return val ? parseInt(val, 10) : 0;
@@ -150,10 +163,29 @@ export async function incrementSessionCount(): Promise<number> {
   const count = await getSessionCount();
   const next = count + 1;
   await AsyncStorage.setItem(SESSION_COUNT_KEY, String(next));
+  // Sync to PocketBase
+  if (pb.authStore.isValid && pb.authStore.record?.id) {
+    try {
+      await pb.collection('users').update(pb.authStore.record.id, {
+        sessionCount: next,
+      });
+    } catch {}
+  }
   return next;
 }
 
 async function getDeviceQueue(): Promise<Record<string, DeviceQueueEntry>> {
+  // Try PocketBase first if authenticated
+  if (pb.authStore.isValid && pb.authStore.record?.id) {
+    try {
+      const record = await pb.collection('users').getOne(pb.authStore.record.id);
+      if (record['deviceQueue']) {
+        const queue = JSON.parse(record['deviceQueue'] as string);
+        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+        return queue;
+      }
+    } catch {}
+  }
   try {
     const raw = await AsyncStorage.getItem(QUEUE_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -161,7 +193,16 @@ async function getDeviceQueue(): Promise<Record<string, DeviceQueueEntry>> {
 }
 
 async function saveDeviceQueue(queue: Record<string, DeviceQueueEntry>): Promise<void> {
-  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  const json = JSON.stringify(queue);
+  await AsyncStorage.setItem(QUEUE_KEY, json);
+  // Sync to PocketBase
+  if (pb.authStore.isValid && pb.authStore.record?.id) {
+    try {
+      await pb.collection('users').update(pb.authStore.record.id, {
+        deviceQueue: json,
+      });
+    } catch {}
+  }
 }
 
 export async function updateDeviceRating(
