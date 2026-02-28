@@ -271,6 +271,15 @@ export default function HistoryModal({
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Session | null>(null);
   const [shareSession, setShareSession] = useState<Session | null>(null);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  const allTechniques = useMemo(() => {
+    const techSet = new Set<string>();
+    sessions.forEach(s => {
+      s.terms?.forEach(t => techSet.add(t.label));
+    });
+    return Array.from(techSet).sort();
+  }, [sessions]);
 
   useEffect(() => {
     if (visible) {
@@ -288,20 +297,34 @@ export default function HistoryModal({
     } else {
       setSelected(null);
       setSearch('');
+      setActiveFilters([]);
     }
   }, [visible]);
 
   const filtered = useMemo(() => {
+    let result = sessions;
+
+    // Apply text search
     const q = search.toLowerCase().trim();
-    if (!q) return sessions;
-    return sessions.filter(
-      (s) =>
-        (s.prompt?.toLowerCase().includes(q) ?? false) ||
-        stripHtml(s.writing).toLowerCase().includes(q) ||
-        s.date.includes(q) ||
-        (s.terms?.some((t) => t.label.toLowerCase().includes(q)) ?? false),
-    );
-  }, [search, sessions]);
+    if (q) {
+      result = result.filter(
+        (s) =>
+          (s.prompt?.toLowerCase().includes(q) ?? false) ||
+          stripHtml(s.writing).toLowerCase().includes(q) ||
+          s.date.includes(q) ||
+          (s.terms?.some((t) => t.label.toLowerCase().includes(q)) ?? false),
+      );
+    }
+
+    // Apply technique filters
+    if (activeFilters.length > 0) {
+      result = result.filter(s =>
+        s.terms?.some(t => activeFilters.includes(t.label)) ?? false
+      );
+    }
+
+    return result;
+  }, [search, sessions, activeFilters]);
 
   const flatItems = useMemo(() => flatten(filtered), [filtered]);
 
@@ -342,6 +365,51 @@ export default function HistoryModal({
                 clearButtonMode="while-editing"
               />
             </View>
+
+            {/* Technique filter chips */}
+            {allTechniques.length > 0 && (
+              <View style={styles.filterRow}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterChipsContent}
+                >
+                  {allTechniques.map((tech) => {
+                    const isActive = activeFilters.includes(tech);
+                    return (
+                      <TouchableOpacity
+                        key={tech}
+                        style={[
+                          styles.filterChip,
+                          isActive && styles.filterChipActive,
+                        ]}
+                        onPress={() => {
+                          setActiveFilters(prev =>
+                            isActive
+                              ? prev.filter(f => f !== tech)
+                              : [...prev, tech]
+                          );
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.filterChipText,
+                          isActive && styles.filterChipTextActive,
+                        ]}>{tech}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {activeFilters.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearFiltersBtn}
+                      onPress={() => setActiveFilters([])}
+                    >
+                      <Text style={styles.clearFiltersText}>Clear filters</Text>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+              </View>
+            )}
 
             {/* Column headers */}
             {!loading && flatItems.length > 0 && (
@@ -467,6 +535,46 @@ const styles = StyleSheet.create({
     fontFamily: Font.serif,
     fontSize: 15,
     color: Colors.textPrimary,
+  },
+
+  // Filter chips
+  filterRow: {
+    paddingLeft: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  filterChipsContent: {
+    gap: 6,
+    paddingRight: Spacing.lg,
+    alignItems: 'center',
+  },
+  filterChip: {
+    backgroundColor: Colors.cardBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  filterChipText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textPrimary,
+  },
+  filterChipTextActive: {
+    color: Colors.textOnAccent,
+  },
+  clearFiltersBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  clearFiltersText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.accent,
   },
 
   // Column headers
