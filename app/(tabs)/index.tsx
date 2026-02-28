@@ -5,6 +5,7 @@ import {
     ActivityIndicator,
     Animated,
     Easing,
+    Modal,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -25,13 +26,15 @@ import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
-import { getStats, Stats } from '../../utils/storage';
+import { getStats, getSessions, Stats } from '../../utils/storage';
 
 // 
 // Constants
 // 
 
 const TERM_ROW_H = 32;   // height of a single frame in a technique-term reel (increased for larger chips)
+const MAX_EXCERPT_LENGTH = 120;
+const CELEBRATION_DURATION_MS = 2500;
 
 // 
 // Helpers
@@ -262,6 +265,8 @@ export default function HomeScreen() {
   const [showExport, setShowExport] = useState(false);
   const [exportInitialTemplate, setExportInitialTemplate] = useState<CardTemplate | undefined>(undefined);
   const [streak, setStreak] = useState(0);
+  const [pastExcerpt, setPastExcerpt] = useState<{text: string, date: string} | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
@@ -295,6 +300,20 @@ export default function HomeScreen() {
   useEffect(() => {
     if (showStats) refreshStats();
   }, [showStats, refreshStats]);
+
+  useEffect(() => {
+    getSessions().then(sessions => {
+      if (sessions.length > 0) {
+        const idx = Math.floor(Math.random() * sessions.length);
+        const s = sessions[idx];
+        const writing = s.writing.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (writing.length > 0) {
+          const excerpt = writing.length > MAX_EXCERPT_LENGTH ? writing.slice(0, MAX_EXCERPT_LENGTH) + '…' : writing;
+          setPastExcerpt({ text: excerpt, date: s.date });
+        }
+      }
+    });
+  }, []);
 
   const handleShuffle = useCallback(async () => {
     if (isSpinning || loadingPrompt || !prompt) return;
@@ -441,10 +460,33 @@ export default function HomeScreen() {
       setSessionWordCount(wordCount);
       setSessionImage(scanImage);
       setShowSession(false);
-      setTimeout(() => setShowReflection(true), 350);
+      setShowCelebration(true);
     },
     [],
   );
+
+  const celebrationAffirmations = [
+    "That's a complete thought.",
+    "You wrote through it.",
+    "Something happened there.",
+    "The page is no longer blank.",
+    "You showed up today.",
+    "That counts.",
+    "Words on paper. That's the work.",
+  ];
+
+  const handleCelebrationDone = useCallback(() => {
+    setShowCelebration(false);
+    setTimeout(() => setShowReflection(true), 300);
+  }, []);
+
+  // Auto-dismiss celebration after 2.5 seconds
+  useEffect(() => {
+    if (showCelebration) {
+      const timer = setTimeout(handleCelebrationDone, CELEBRATION_DURATION_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration, handleCelebrationDone]);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -635,6 +677,18 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Emotional Primer */}
+        <View style={styles.primerSection}>
+          {pastExcerpt ? (
+            <>
+              <Text style={styles.primerText}>"{pastExcerpt.text}"</Text>
+              <Text style={styles.primerDate}>{pastExcerpt.date}</Text>
+            </>
+          ) : (
+            <Text style={styles.primerPlaceholder}>Your writing will live here.</Text>
+          )}
+        </View>
+
         {/*  Encouragement  */}
         <View style={styles.encouragementRow}>
           <View style={styles.encouragementLine} />
@@ -721,6 +775,21 @@ export default function HomeScreen() {
         initialTemplate={exportInitialTemplate}
         hideTemplateSelector={!!exportInitialTemplate}
       />
+
+      {/* Celebratory Moment */}
+      <Modal visible={showCelebration} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.celebrationOverlay}
+          activeOpacity={1}
+          onPress={handleCelebrationDone}
+        >
+          <Text style={styles.celebrationCount}>{sessionWordCount}</Text>
+          <Text style={styles.celebrationLabel}>words</Text>
+          <Text style={styles.celebrationAffirmation}>
+            {celebrationAffirmations[Math.floor(Math.random() * celebrationAffirmations.length)]}
+          </Text>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -956,6 +1025,66 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.md,
     lineHeight: 20,
+    fontStyle: 'italic',
+  },
+
+  //  Emotional Primer
+  primerSection: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+  },
+  primerText: {
+    fontFamily: Font.serifItalic,
+    fontSize: 14,
+    color: Colors.textMuted,
+    lineHeight: 22,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  primerDate: {
+    fontFamily: Font.serif,
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    opacity: 0.7,
+  },
+  primerPlaceholder: {
+    fontFamily: Font.serifItalic,
+    fontSize: 14,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    opacity: 0.6,
+  },
+
+  //  Celebration
+  celebrationOverlay: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  celebrationCount: {
+    fontFamily: Font.serifBold,
+    fontSize: 72,
+    color: Colors.accent,
+    letterSpacing: 2,
+  },
+  celebrationLabel: {
+    fontFamily: Font.serif,
+    fontSize: 18,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    letterSpacing: 1,
+  },
+  celebrationAffirmation: {
+    fontFamily: Font.serifItalic,
+    fontSize: 18,
+    color: Colors.textPrimary,
+    marginTop: Spacing.xl,
+    textAlign: 'center',
+    lineHeight: 28,
     fontStyle: 'italic',
   },
 });

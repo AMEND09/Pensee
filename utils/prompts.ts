@@ -319,6 +319,138 @@ export const rhetoricalExamples: Record<string, string[]> = {
 };
 
 /**
+ * Literary examples for rhetorical devices — drawn from recognizable published works.
+ * Each entry has: passage, author, and a one-line craft note.
+ */
+export const rhetoricalLiteraryExamples: Record<string, { passage: string; author: string; note: string }> = {
+  juxtaposition: {
+    passage: 'It was the best of times, it was the worst of times.',
+    author: 'Charles Dickens, A Tale of Two Cities',
+    note: 'Dickens opens with extreme contrasts to capture the paradox of a revolutionary era.',
+  },
+  polysyndeton: {
+    passage: 'And the rain descended, and the floods came, and the winds blew, and beat upon that house.',
+    author: 'Matthew 7:25, King James Bible',
+    note: 'The repeated "and" creates a sense of relentless accumulation.',
+  },
+  metaphor: {
+    passage: 'All the world\'s a stage, and all the men and women merely players.',
+    author: 'William Shakespeare, As You Like It',
+    note: 'Shakespeare collapses the boundary between life and theater in a single declaration.',
+  },
+  simile: {
+    passage: 'My love is like a red, red rose that\'s newly sprung in June.',
+    author: 'Robert Burns, "A Red, Red Rose"',
+    note: 'The doubled adjective intensifies the comparison beyond convention.',
+  },
+  anaphora: {
+    passage: 'I have a dream that one day… I have a dream that one day…',
+    author: 'Martin Luther King Jr., "I Have a Dream"',
+    note: 'The repetition builds emotional momentum until the vision feels inevitable.',
+  },
+  ethos: {
+    passage: 'In the councils of government, we must guard against the acquisition of unwarranted influence.',
+    author: 'Dwight D. Eisenhower, Farewell Address',
+    note: 'A departing president leverages decades of military and political authority.',
+  },
+  pathos: {
+    passage: 'If you prick us, do we not bleed? If you tickle us, do we not laugh?',
+    author: 'William Shakespeare, The Merchant of Venice',
+    note: 'Shylock appeals to shared humanity through visceral physical experience.',
+  },
+  logos: {
+    passage: 'We hold these truths to be self-evident, that all men are created equal.',
+    author: 'Thomas Jefferson, Declaration of Independence',
+    note: 'The argument is framed as logical inevitability — not opinion, but axiom.',
+  },
+  hyperbole: {
+    passage: 'I had to wait in the station for ten days — an eternity.',
+    author: 'Joseph Conrad, Heart of Darkness',
+    note: 'The exaggeration conveys psychological time rather than clock time.',
+  },
+  alliteration: {
+    passage: 'From forth the fatal loins of these two foes.',
+    author: 'William Shakespeare, Romeo and Juliet',
+    note: 'The repeated "f" sound creates a foreboding musicality.',
+  },
+  assonance: {
+    passage: 'Hear the mellow wedding bells.',
+    author: 'Edgar Allan Poe, "The Bells"',
+    note: 'The repeated "e" sound mimics the gentle resonance of the bells themselves.',
+  },
+  chiasmus: {
+    passage: 'Ask not what your country can do for you — ask what you can do for your country.',
+    author: 'John F. Kennedy, Inaugural Address',
+    note: 'The inversion of structure turns passive citizenship into active responsibility.',
+  },
+  asyndeton: {
+    passage: 'He was a bag of bones, a floppy doll, a broken stick, a maniac.',
+    author: 'Jack Kerouac, On the Road',
+    note: 'The missing conjunctions create breathless velocity.',
+  },
+  litotes: {
+    passage: 'He was not unmindful of the survey of English literature.',
+    author: 'Jane Austen, Northanger Abbey',
+    note: 'The double negative softens the statement into characteristic Austen understatement.',
+  },
+  oxymoron: {
+    passage: 'Parting is such sweet sorrow.',
+    author: 'William Shakespeare, Romeo and Juliet',
+    note: 'The contradiction captures the simultaneous pain and tenderness of farewell.',
+  },
+  personification: {
+    passage: 'Because I could not stop for Death — He kindly stopped for me.',
+    author: 'Emily Dickinson, "Because I could not stop for Death"',
+    note: 'Death as a courteous gentleman transforms terror into strange intimacy.',
+  },
+  apostrophe: {
+    passage: 'O Death, where is thy sting? O grave, where is thy victory?',
+    author: '1 Corinthians 15:55, King James Bible',
+    note: 'Addressing death directly turns fear into defiant triumph.',
+  },
+  antithesis: {
+    passage: 'That\'s one small step for man, one giant leap for mankind.',
+    author: 'Neil Armstrong',
+    note: 'The contrast between "small" and "giant" elevates a physical act into historic meaning.',
+  },
+  climax: {
+    passage: 'Friends, Romans, countrymen, lend me your ears.',
+    author: 'William Shakespeare, Julius Caesar',
+    note: 'The ascending intimacy — from political ally to fellow citizen — draws the crowd closer.',
+  },
+  euphemism: {
+    passage: 'He has gone to his long home, and the mourners go about the streets.',
+    author: 'Ecclesiastes 12:5, King James Bible',
+    note: 'Death becomes a homecoming — gentler, but no less final.',
+  },
+  synecdoche: {
+    passage: 'Now is the winter of our discontent made glorious summer by this sun of York.',
+    author: 'William Shakespeare, Richard III',
+    note: '"Winter" and "summer" stand for entire emotional and political eras.',
+  },
+  irony: {
+    passage: 'Water, water, every where, nor any drop to drink.',
+    author: 'Samuel Taylor Coleridge, "The Rime of the Ancient Mariner"',
+    note: 'Surrounded by ocean yet dying of thirst — the cruelest possible abundance.',
+  },
+  paradox: {
+    passage: 'I must be cruel only to be kind.',
+    author: 'William Shakespeare, Hamlet',
+    note: 'Hamlet justifies harsh action through compassionate intention.',
+  },
+  allegory: {
+    passage: 'All animals are equal, but some animals are more equal than others.',
+    author: 'George Orwell, Animal Farm',
+    note: 'The corruption of language mirrors the corruption of the revolution itself.',
+  },
+  allusion: {
+    passage: 'Call me Ishmael.',
+    author: 'Herman Melville, Moby-Dick',
+    note: 'The biblical name signals exile and wandering before the story even begins.',
+  },
+};
+
+/**
  * Short glossary entries for the rhetorical devices. These are shown when a term
  * from the daily prompt is tapped instead of firing off a network request.  The
  * map is exported to avoid runtime errors when components attempt to use it as
