@@ -141,7 +141,7 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
                   {rhetoricalLiteraryExamples[normalizedTerm] && (
                     <View style={styles.literaryExampleBlock}>
                       <Text style={styles.literaryPassage}>
-                        "{rhetoricalLiteraryExamples[normalizedTerm].passage}"
+                        {rhetoricalLiteraryExamples[normalizedTerm].passage}
                       </Text>
                       <Text style={styles.literaryAuthor}>
                         — {rhetoricalLiteraryExamples[normalizedTerm].author}
