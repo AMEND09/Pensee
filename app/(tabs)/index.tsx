@@ -267,6 +267,8 @@ export default function HomeScreen() {
   const [streak, setStreak] = useState(0);
   const [pastExcerpt, setPastExcerpt] = useState<{text: string, date: string} | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showIntention, setShowIntention] = useState(false);
+  const [sessionIntention, setSessionIntention] = useState<string>('');
 
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
@@ -382,8 +384,27 @@ export default function HomeScreen() {
 
   const handleBeginSession = useCallback(() => {
     setSessionPrompt(prompt);
-    setShowSession(true);
+    setShowIntention(true);
   }, [prompt]);
+
+  const intentionOptions = [
+    'Use a device more naturally',
+    'Write without stopping',
+    'Try a different kind of opening',
+    'Follow wherever it leads',
+  ];
+
+  const handleIntentionSelected = useCallback((intention: string) => {
+    setSessionIntention(intention);
+    setShowIntention(false);
+    setTimeout(() => setShowSession(true), 300);
+  }, []);
+
+  const handleIntentionSkip = useCallback(() => {
+    setSessionIntention('');
+    setShowIntention(false);
+    setTimeout(() => setShowSession(true), 300);
+  }, []);
 
   // Width of the text area inside the quote card, used by the off-screen measuring node.
   // scrollContent paddingHorizontal + quoteTouchable paddingHorizontal on both sides.
@@ -776,6 +797,31 @@ export default function HomeScreen() {
         hideTemplateSelector={!!exportInitialTemplate}
       />
 
+      {/* Session Intention Setter */}
+      <Modal visible={showIntention} transparent animationType="slide">
+        <View style={styles.intentionOverlay}>
+          <View style={styles.intentionSheet}>
+            <View style={styles.intentionHandle} />
+            <Text style={styles.intentionQuestion}>What do you want to try today?</Text>
+            <View style={styles.intentionGrid}>
+              {intentionOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.intentionChip}
+                  onPress={() => handleIntentionSelected(option)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.intentionChipText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity onPress={handleIntentionSkip} style={styles.intentionSkip}>
+              <Text style={styles.intentionSkipText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Celebratory Moment */}
       <Modal visible={showCelebration} transparent animationType="fade">
         <TouchableOpacity
@@ -1086,5 +1132,71 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 28,
     fontStyle: 'italic',
+  },
+
+  //  Intention Setter
+  intentionOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    justifyContent: 'flex-end',
+  },
+  intentionSheet: {
+    backgroundColor: Colors.cardBg,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xxl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderBottomWidth: 0,
+  },
+  intentionHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: Spacing.lg,
+  },
+  intentionQuestion: {
+    fontFamily: Font.serifBold,
+    fontSize: 22,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    lineHeight: 30,
+  },
+  intentionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+  },
+  intentionChip: {
+    width: '47%',
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+  },
+  intentionChipText: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  intentionSkip: {
+    alignItems: 'center',
+    paddingTop: Spacing.lg,
+  },
+  intentionSkipText: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textMuted,
   },
 });
