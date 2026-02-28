@@ -3,13 +3,15 @@ import {
     ActivityIndicator,
     Modal,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
-import { Stats } from '../../utils/storage';
+import { getSessions, Stats } from '../../utils/storage';
+import { rhetoricalDefinitions } from '../../utils/prompts';
 
 type Props = {
   visible: boolean;
@@ -40,6 +42,9 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
   // stats and loading are supplied by parent
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [practicedDevices, setPracticedDevices] = useState<string[]>([]);
+  const [showDeviceLibrary, setShowDeviceLibrary] = useState(false);
+  const [deviceMastery, setDeviceMastery] = useState<Record<string, 'natural' | 'developing' | 'untouched'>>({});
 
   // sync local copies with props to allow layout logic below unchanged
   useEffect(() => {
@@ -48,6 +53,45 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
   useEffect(() => {
     setLoading(propLoading);
   }, [propLoading]);
+
+  useEffect(() => {
+    if (!visible) return;
+    getSessions().then(sessions => {
+      const allDeviceNames = Object.keys(rhetoricalDefinitions);
+      const practiced = new Set<string>();
+      const ratings: Record<string, string[]> = {};
+
+      sessions.forEach(s => {
+        // terms from session
+        s.terms?.forEach(t => practiced.add(t.id));
+        // try to parse device ratings from vocab field (new format)
+        try {
+          const parsed = JSON.parse(s.vocab);
+          if (typeof parsed === 'object' && parsed !== null) {
+            Object.entries(parsed).forEach(([key, val]) => {
+              if (!ratings[key]) ratings[key] = [];
+              ratings[key].push(val as string);
+            });
+          }
+        } catch {}
+      });
+
+      const MASTERY_THRESHOLD = 2;
+      const mastery: Record<string, 'natural' | 'developing' | 'untouched'> = {};
+      allDeviceNames.forEach(name => {
+        if (!practiced.has(name)) {
+          mastery[name] = 'untouched';
+        } else if (ratings[name] && ratings[name].filter(r => r === 'natural').length >= MASTERY_THRESHOLD) {
+          mastery[name] = 'natural';
+        } else {
+          mastery[name] = 'developing';
+        }
+      });
+
+      setPracticedDevices(Array.from(practiced));
+      setDeviceMastery(mastery);
+    });
+  }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -79,6 +123,7 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
             </View>
           ) : (
             stats && (
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
               <View style={styles.body}>
                 {/* Top two stats */}
                 <View style={styles.statsRow}>
@@ -128,7 +173,70 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
                   </Text>
                   <Text style={styles.quoteAttrib}> Margaret Atwood</Text>
                 </View>
+
+                {/* Device Coverage */}
+                <View style={styles.divider} />
+                <TouchableOpacity
+                  style={styles.deviceCoverageRow}
+                  onPress={() => setShowDeviceLibrary(!showDeviceLibrary)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.deviceCoverageLeft}>
+                    <Text style={styles.deviceCoverageTitle}>Devices Practiced</Text>
+                    <Text style={styles.deviceCoverageCount}>
+                      {practicedDevices.length} of {Object.keys(rhetoricalDefinitions).length}
+                    </Text>
+                  </View>
+                  {/* Simple progress ring using a View */}
+                  <View style={styles.progressRing}>
+                    <Text style={styles.progressRingText}>
+                      {Math.round((practicedDevices.length / Object.keys(rhetoricalDefinitions).length) * 100)}%
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {showDeviceLibrary && (
+                  <View style={styles.deviceLibrary}>
+                    <View style={styles.deviceLegend}>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: '#6b9e5f' }]} />
+                        <Text style={styles.legendText}>Natural</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: '#d4a054' }]} />
+                        <Text style={styles.legendText}>Developing</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: Colors.border }]} />
+                        <Text style={styles.legendText}>Untouched</Text>
+                      </View>
+                    </View>
+                    <View style={styles.deviceGrid}>
+                      {Object.keys(rhetoricalDefinitions).map((name) => {
+                        const status = deviceMastery[name] || 'untouched';
+                        return (
+                          <View
+                            key={name}
+                            style={[
+                              styles.deviceChip,
+                              status === 'natural' && styles.deviceChipNatural,
+                              status === 'developing' && styles.deviceChipDeveloping,
+                              status === 'untouched' && styles.deviceChipUntouched,
+                            ]}
+                          >
+                            <Text style={[
+                              styles.deviceChipText,
+                              status === 'natural' && styles.deviceChipTextNatural,
+                              status === 'developing' && styles.deviceChipTextDeveloping,
+                            ]}>{name}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
               </View>
+              </ScrollView>
             )
           )}
         </Pressable>
@@ -215,6 +323,9 @@ const styles = StyleSheet.create({
   body: {
     paddingBottom: Spacing.lg,
   },
+  scrollBody: {
+    maxHeight: 500,
+  },
   statsRow: {
     flexDirection: 'row',
     paddingVertical: Spacing.lg,
@@ -288,5 +399,99 @@ const styles = StyleSheet.create({
     fontFamily: Font.serif,
     fontSize: 12,
     color: Colors.textMuted,
+  },
+  deviceCoverageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  deviceCoverageLeft: {
+    flex: 1,
+  },
+  deviceCoverageTitle: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  deviceCoverageCount: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  progressRing: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 3,
+    borderColor: Colors.accent,
+    backgroundColor: Colors.accentMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressRingText: {
+    fontFamily: Font.serifBold,
+    fontSize: 13,
+    color: Colors.accent,
+  },
+  deviceLibrary: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+  deviceLegend: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontFamily: Font.serif,
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  deviceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  deviceChip: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  deviceChipNatural: {
+    backgroundColor: '#e8f5e1',
+    borderColor: '#b8d4a8',
+  },
+  deviceChipDeveloping: {
+    backgroundColor: '#fdf3e3',
+    borderColor: '#e4c98a',
+  },
+  deviceChipUntouched: {
+    backgroundColor: Colors.bg,
+    borderColor: Colors.border,
+  },
+  deviceChipText: {
+    fontFamily: Font.serif,
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  deviceChipTextNatural: {
+    color: '#4a7c3f',
+  },
+  deviceChipTextDeveloping: {
+    color: '#a0762a',
   },
 });
