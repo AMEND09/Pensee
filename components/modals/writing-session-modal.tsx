@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '../../constants/theme';
 import { recognizeHandwriting } from '../../utils/ocr';
 import { Prompt, Term } from '../../utils/prompts';
+import NativeCameraOcr from '../NativeCameraOcr';
 import DictionaryModal from './dictionary-modal';
 import QuoteModal from './quote-modal';
 import TermDetailModal from './term-detail-modal';
@@ -124,6 +125,7 @@ export default function WritingSessionModal({
   });
   const [scanning, setScanning] = useState(false);
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
+  const [showNativeCamera, setShowNativeCamera] = useState(false);
   const [editorScrollY, setEditorScrollY] = useState(0);
 
   const editorRef = useRef<TextInput | null>(null);
@@ -239,30 +241,31 @@ export default function WritingSessionModal({
     setInfoModal({ visible: true, title, message });
   }, []);
 
-  const launchScan = async (source: 'camera' | 'library') => {
-    if (source === 'camera' && Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        showInfo('Permission needed', 'Allow camera access to scan handwriting.');
-        return;
-      }
+  // Called when the native camera OCR scanner recognizes text
+  const handleNativeCameraText = useCallback((recognizedText: string) => {
+    if (recognizedText.trim()) {
+      insertTextIntoEditor(recognizedText.trim());
+    } else {
+      showInfo('No text found', 'Could not read text from the camera. Try again with clearer handwriting and good lighting.');
     }
+  }, [insertTextIntoEditor, showInfo]);
+
+  const launchScan = async (source: 'camera' | 'library') => {
+    // On native, "Take Photo" uses the real-time camera OCR scanner
+    if (source === 'camera' && Platform.OS !== 'web') {
+      setShowNativeCamera(true);
+      return;
+    }
+
     setScanning(true);
     try {
       const opts = { mediaTypes: ['images'] as any, quality: 0.85, base64: true };
-      const result =
-        source === 'camera' && Platform.OS !== 'web'
-          ? await ImagePicker.launchCameraAsync(opts)
-          : await ImagePicker.launchImageLibraryAsync(opts);
+      const result = await ImagePicker.launchImageLibraryAsync(opts);
 
       if (result.canceled) return;
 
       const asset = result.assets?.[0];
       if (!asset) return;
-      // if the user took a photo directly we can store its uri
-      if (source === 'camera' && asset.uri) {
-        setScanImage(asset.uri);
-      }
       const imageUri = (asset.uri ?? '') as string;
       const b64 = (asset.base64 ?? '') as string;
 
@@ -508,6 +511,11 @@ export default function WritingSessionModal({
           )}
         </SafeAreaView>
       </Modal>
+      <NativeCameraOcr
+        visible={showNativeCamera}
+        onClose={() => setShowNativeCamera(false)}
+        onTextRecognized={handleNativeCameraText}
+      />
     </>
   );
 }

@@ -5,7 +5,6 @@ type HandwritingInput = {
   uri?: string;
 };
 
-let nativeOcrModulePromise: Promise<any> | null = null;
 let tesseractWorkerPromise: Promise<any> | null = null;
 
 function formatError(error: unknown) {
@@ -165,22 +164,6 @@ async function uriToDataUrl(uri: string): Promise<string> {
   });
 }
 
-async function getNativeOcrModule() {
-  if (!nativeOcrModulePromise) {
-    nativeOcrModulePromise = (async () => {
-      try {
-        const module = await import('rn-mlkit-ocr');
-        return (module as any).default ?? module;
-      } catch (error) {
-        nativeOcrModulePromise = null;
-        throw error;
-      }
-    })();
-  }
-
-  return nativeOcrModulePromise;
-}
-
 // ---------------------------------------------------------------------------
 // Platform entry points
 // ---------------------------------------------------------------------------
@@ -207,11 +190,9 @@ async function recognizeHandwritingWebFromSource(input: HandwritingInput): Promi
   return result.text;
 }
 
-async function recognizeHandwritingNative(uri: string): Promise<string> {
-  const mlkit = await getNativeOcrModule();
-  const result = await mlkit.recognizeText(uri, 'latin');
-  return (result?.text ?? '').trim();
-}
+// Native OCR is now handled by NativeCameraOcr component using
+// @bear-block/vision-camera-ocr frame processor (real-time camera OCR).
+// The recognizeHandwriting function below only handles the web path.
 
 export async function recognizeHandwriting(input: HandwritingInput): Promise<string> {
   try {
@@ -225,8 +206,10 @@ export async function recognizeHandwriting(input: HandwritingInput): Promise<str
       return await recognizeHandwritingWebFromSource(input);
     }
 
-    if (!input.uri) return '';
-    return await recognizeHandwritingNative(input.uri);
+    // Native OCR is handled by NativeCameraOcr component via frame processor.
+    // If this function is called on native (e.g. from image library picker),
+    // return empty since static image OCR is not available on native.
+    return '';
   } catch (error) {
     if (__DEV__) {
       const formatted = formatError(error);
