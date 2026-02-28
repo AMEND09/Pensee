@@ -308,4 +308,82 @@ A logo has no UX in the traditional sense, but it has an emotional effect. The g
 
 -----
 
+## 13. Intentional Prompt & Device Curation System
+
+**Change**
+Replace the fully random prompt and device assignment system with a structured curation engine that makes intelligent, purposeful selections every day.
+
+**Detailed Description**
+Currently, quotes and rhetorical devices are assigned at random with no relationship to each other, no awareness of what the user has seen before, no consideration of difficulty progression, and no intentional pairing logic. This means a user might receive the same device twice in a week, encounter a complex device on day one, or get a device that actively fights the emotional register of the day’s prompt. The curation system proposed here treats each day’s combination — prompt type, specific prompt, and three devices — as a deliberate editorial decision, not a lottery.
+
+The system has four interlocking layers: prompt categorization, device categorization, prompt-device pairing logic, and per-user sequencing. Together they ensure every day’s combination feels considered, appropriately challenging, and pedagogically sound.
+
+**How It Works**
+
+*Layer 1 — Prompt Categorization*
+
+Every prompt in the library is tagged across three dimensions before it enters the system:
+
+— **Type:** Quote / Question / Observation / Concept / Memory / Formal constraint
+— **Emotional register:** Reflective / Urgent / Melancholic / Celebratory / Intellectual / Provocative
+— **Cognitive demand:** Low (concrete, sensory, personal) / Medium (analytical, relational) / High (abstract, philosophical, counterintuitive)
+
+New users begin on low-to-medium cognitive demand prompts. Cognitive demand increases gradually as session count grows, with the pace informed by average word count and session-feel ratings. A user who consistently scores high session-feel and high word count advances faster. A user who scores low is held at the current level longer.
+
+*Layer 2 — Device Categorization*
+
+Every rhetorical device and vocabulary word in the library is tagged across four dimensions:
+
+— **Type:** Rhetorical device (R) / Vocabulary word (V)
+— **Difficulty:** Foundational / Intermediate / Advanced
+— **Emotional affinity:** Which emotional registers this device serves naturally (e.g., anaphora → grief, longing, accumulation; asyndeton → urgency, action, overwhelm; litotes → restraint, irony, understatement)
+— **Structural affinity:** Whether the device operates at the sentence level, paragraph level, or whole-piece level
+
+New users see only Foundational devices. Intermediate devices unlock after 10 sessions. Advanced devices unlock after 25. Within each tier, devices are sequenced from most intuitive to most counterintuitive — a user encounters simile before synecdoche, repetition before chiasmus.
+
+*Layer 3 — Prompt-Device Pairing Logic*
+
+Each day’s three techniques are not selected independently of the prompt. The pairing algorithm follows these rules:
+
+— At least one device must have strong emotional affinity with the day’s prompt register. If the prompt is melancholic, one device should be one that serves melancholy naturally (anaphora, ellipsis, asyndeton).
+— At least one device must be from the user’s “developing” pool — devices they’ve rated as “felt forced” in the past and are due for spaced repetition review.
+— One device may be a stretch — a device the user hasn’t seen before, or one from the next difficulty tier, introduced as a gentle challenge rather than a wall.
+— The vocabulary word (V-tagged) should have semantic resonance with the prompt’s theme. “Gossamer” paired with a prompt about fragility. “Penumbra” paired with a prompt about ambiguity. This isn’t decoration — it models how writers think about diction as a tool.
+
+*Layer 4 — Per-User Sequencing*
+
+Each user has a device queue managed by spaced repetition logic, informed directly by their reflection ratings:
+
+— **“Felt natural” rating:** Device moves to a 14-day return interval. After two consecutive “natural” ratings, it moves to 30 days (maintenance mode).
+— **“Felt forced” rating:** Device returns within 3-4 days, paired with a different prompt type to force a different application.
+— **No reflection submitted:** Device returns within 7 days — neutral assumption.
+— **Unseen devices:** Introduced at a rate of one new device per session maximum, always paired with two familiar devices so the session never feels entirely foreign.
+
+The prompt queue operates on a separate but parallel logic. Prompt types rotate across the week — a user should not see two quote prompts in a row if a question or concept prompt is available. The emotional register also rotates: a week of prompts should not be uniformly melancholic or uniformly intellectual. The system targets variety within coherence.
+
+**How It Helps**
+
+Transforms Pensée from a random daily exercise into a structured learning curriculum that adapts to each user. Users encounter devices at the right moment — when they’re ready, not before — and revisit them at the right interval — when they’ve begun to forget, not immediately. Prompt-device pairing means the device feels useful rather than arbitrary. Emotional register rotation prevents fatigue and keeps the writing experience texturally varied. All of this adds up to the single outcome that matters most: users get meaningfully better at writing, and they can see that they are.
+
+**User Flow**
+
+*Daily assignment:* System evaluates user’s device queue → selects one developing device (spaced repetition), one stretch device (progression), one contextually resonant vocabulary word → selects prompt from appropriate difficulty tier with matching emotional register → applies pairing check to confirm at least one device has affinity with prompt register → assigns combination → user sees result on home screen.
+
+*After reflection:* User rates each device → system updates device queue intervals → flags any device rated “forced” twice in a row for accelerated return → logs prompt type and session feel → adjusts future prompt difficulty weighting if pattern detected.
+
+*Milestone:* After 10 sessions, system unlocks intermediate devices and notifies user quietly — not with a badge or celebration, but by simply introducing a new device in the next session with a small “New” label on the chip.
+
+**UI Description**
+
+The curation system is largely invisible to the user — its outputs are the same home screen chips and prompt card they already see. Two small additions signal that the system is intelligent rather than random:
+
+— A “returning” indicator on device chips that are back due to spaced repetition — a subtle small dot or the existing chip style with a slightly different border weight. Not labeled “spaced repetition” — just visually distinct enough that a curious user notices the same device returning.
+— The “New” label on a chip when a device appears for the first time — same chip style, small “New” in muted terracotta above the device name. Disappears after the user taps the chip to read the definition.
+
+**UX Description**
+
+The best curation systems are invisible. The user should not feel managed or sequenced — they should feel like the app always seems to know what they need. The device that keeps coming back is the one they keep struggling with. The prompt that arrives on a hard day somehow has the right emotional register. The new device appears just as the familiar ones are starting to feel easy. None of this should be announced or explained. It should simply feel like Pensée has good taste and pays attention. The system’s intelligence is expressed through the quality of the daily experience, not through any visible mechanism.
+
+-----
+
 *Document prepared February 2026. All recommendations based on review of current app screens and informed by research in cognitive psychology, deliberate practice theory, and writing pedagogy.*
