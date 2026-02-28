@@ -93,6 +93,7 @@ export default function OnboardingModal({ visible, terms, onComplete }: Props) {
               <TouchableOpacity
                 style={[styles.nextBtn, !allTermsRevealed && styles.nextBtnMuted]}
                 onPress={handleNext}
+                disabled={!allTermsRevealed}
               >
                 <Text style={[styles.nextBtnText, !allTermsRevealed && styles.nextBtnTextMuted]}>
                   {allTermsRevealed ? 'Continue' : 'Tap each technique first'}
