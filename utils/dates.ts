@@ -36,7 +36,7 @@ export function normalizeDateString(raw?: string | null): string {
   // If the value is exactly a bare YYYY-MM-DD string (10 chars, no time/zone
   // suffix) we treat it as the local calendar date the user intended.
   const trimmed = raw.trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+  if (trimmed.length === 10 && /^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed;
   }
 

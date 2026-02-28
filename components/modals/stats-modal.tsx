@@ -39,6 +39,9 @@ function StatBlock({
   );
 }
 
+// Static set of all rhetorical device names (never changes at runtime)
+const ALL_DEVICE_NAMES = new Set(Object.keys(rhetoricalDefinitions));
+
 export default function StatsModal({ visible, onClose, stats: propStats, loading: propLoading }: Props) {
   // stats and loading are supplied by parent
   const [stats, setStats] = useState<Stats | null>(null);
@@ -58,14 +61,13 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
   useEffect(() => {
     if (!visible) return;
     getSessions().then(sessions => {
-      const allDeviceNames = new Set(Object.keys(rhetoricalDefinitions));
       const practiced = new Set<string>();
       const ratings: Record<string, string[]> = {};
 
       sessions.forEach(s => {
         // terms from session — only count rhetorical devices, not vocab words
         s.terms?.forEach(t => {
-          if (allDeviceNames.has(t.id)) practiced.add(t.id);
+          if (ALL_DEVICE_NAMES.has(t.id)) practiced.add(t.id);
         });
         // also extract device names from vocab field (device ratings JSON)
         // vocab stores: {"metaphor":"natural","anaphora":"forced",...}
@@ -73,7 +75,7 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
           const parsed = JSON.parse(s.vocab);
           if (typeof parsed === 'object' && parsed !== null) {
             Object.entries(parsed).forEach(([key, val]) => {
-              if (allDeviceNames.has(key)) practiced.add(key);
+              if (ALL_DEVICE_NAMES.has(key)) practiced.add(key);
               if (!ratings[key]) ratings[key] = [];
               ratings[key].push(val as string);
             });
@@ -83,7 +85,7 @@ export default function StatsModal({ visible, onClose, stats: propStats, loading
 
       const MASTERY_THRESHOLD = 2;
       const mastery: Record<string, 'natural' | 'developing' | 'untouched'> = {};
-      allDeviceNames.forEach(name => {
+      ALL_DEVICE_NAMES.forEach(name => {
         if (!practiced.has(name)) {
           mastery[name] = 'untouched';
         } else if (ratings[name] && ratings[name].filter(r => r === 'natural').length >= MASTERY_THRESHOLD) {
