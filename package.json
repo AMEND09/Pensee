@@ -10,7 +10,9 @@
     "web": "node ./scripts/start.js --web",
     "lint": "expo lint",
     "build-web": "expo export --platform web",
-    "deploy-web": "expo export --platform web && node ./scripts/prepare-web.js && npx wrangler deploy --assets=./dist"
+    "deploy-web": "expo export --platform web && node ./scripts/prepare-web.js && npx wrangler deploy --assets=./dist",
+    "test": "playwright test",
+    "test:ocr": "playwright test tests/ocr-benchmark.spec.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -36,8 +38,8 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
-  "html-to-image": "^1.11.11",
     "lucide-react-native": "^0.575.0",
     "pocketbase": "^0.25.2",
     "react": "19.1.0",
@@ -56,9 +58,12 @@
     "rn-mlkit-ocr": "^0.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "tesseract.js": "^7.0.0",
     "typescript": "~5.9.2"
   },
   "private": true
