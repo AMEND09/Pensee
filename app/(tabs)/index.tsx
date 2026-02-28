@@ -15,9 +15,11 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AccountModal from '../../components/modals/account-modal';
 import ExportModal, { CardTemplate } from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
+import OnboardingModal from '../../components/modals/onboarding-modal';
 import QuoteModal from '../../components/modals/quote-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
 import StatsModal from '../../components/modals/stats-modal';
@@ -269,7 +271,7 @@ export default function HomeScreen() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [showIntention, setShowIntention] = useState(false);
   const [sessionIntention, setSessionIntention] = useState<string>('');
-
+  const [showOnboarding, setShowOnboarding] = useState(false);
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
@@ -302,6 +304,19 @@ export default function HomeScreen() {
   useEffect(() => {
     if (showStats) refreshStats();
   }, [showStats, refreshStats]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('pensee_onboarding_complete').then(val => {
+      if (!val) {
+        setShowOnboarding(true);
+      }
+    });
+  }, []);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setShowOnboarding(false);
+    AsyncStorage.setItem('pensee_onboarding_complete', 'true');
+  }, []);
 
   useEffect(() => {
     getSessions().then(sessions => {
@@ -736,6 +751,12 @@ export default function HomeScreen() {
       </View>
 
       {/*  Modals  */}
+      <OnboardingModal
+        visible={showOnboarding}
+        terms={prompt?.terms ?? []}
+        onComplete={handleOnboardingComplete}
+      />
+
       <WritingSessionModal
         visible={showSession}
         prompt={sessionPrompt}
