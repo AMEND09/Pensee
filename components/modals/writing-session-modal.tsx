@@ -251,7 +251,9 @@ export default function WritingSessionModal({
   }, [insertTextIntoEditor, showInfo]);
 
   const launchScan = async (source: 'camera' | 'library') => {
-    // On native, "Take Photo" uses the real-time camera OCR scanner
+    // On native, "Take Photo" opens the NativeCameraOcr real-time scanner
+    // (handled via @bear-block/vision-camera-ocr frame processor).
+    // The library picker path below handles "Choose from Library" and web file picker.
     if (source === 'camera' && Platform.OS !== 'web') {
       setShowNativeCamera(true);
       return;

@@ -87,7 +87,10 @@ function CameraScannerView({
           updateText(result.text);
         }
       } catch (_e) {
-        // Silently ignore frame processing errors
+        // Frame processing errors are expected during transitions; only log in dev
+        if (__DEV__) {
+          console.warn('[NativeCameraOcr] Frame processing error', _e);
+        }
       }
     },
     [updateText],
