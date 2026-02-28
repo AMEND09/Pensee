@@ -391,7 +391,8 @@ export default function WritingSessionModal({
                 onScroll={handleEditorScroll}
                 scrollEventThrottle={16}
                 editable={timerActive}
-                placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
+                placeholder={!timerActive ? 'Begin writing here...' : ''}
+                placeholderTextColor="#C4B5A4"
                 textAlignVertical="top"
               />
 
@@ -401,13 +402,7 @@ export default function WritingSessionModal({
                   style={styles.editorOverlay}
                   activeOpacity={1}
                   onPress={handleStart}
-                >
-                  {seconds === SESSION_SECONDS && (
-                    <View style={styles.overlayCallout}>
-                      <Text style={styles.overlayText}>Tap Start to begin your session</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                />
               )}
             </View>
           </KeyboardAvoidingView>
