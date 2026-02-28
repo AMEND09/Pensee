@@ -28,6 +28,7 @@ import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { useAuth } from '../../utils/auth';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
+import { getCuratedSelection } from '../../utils/curation';
 import { getStats, getSessions, Stats } from '../../utils/storage';
 
 // 
@@ -272,6 +273,7 @@ export default function HomeScreen() {
   const [showIntention, setShowIntention] = useState(false);
   const [sessionIntention, setSessionIntention] = useState<string>('');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [newDevices, setNewDevices] = useState<Set<string>>(new Set());
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
@@ -286,7 +288,18 @@ export default function HomeScreen() {
     });
   }, [prompt]);
 
-  // load streak & stats when app starts and whenever stats modal opens
+  // Check which devices are new for badge display
+  useEffect(() => {
+    if (!prompt) return;
+    getCuratedSelection(new Date()).then(curated => {
+      if (curated.isNewDevice) {
+        const newSet = new Set<string>();
+        // The last device in the curated list is the new/stretch device
+        newSet.add(curated.devices[curated.devices.length - 1]);
+        setNewDevices(newSet);
+      }
+    }).catch(() => {});
+  }, [prompt]);
   const refreshStats = useCallback(async () => {
     setStatsLoading(true);
     try {
@@ -686,8 +699,11 @@ export default function HomeScreen() {
 
           <View style={styles.termRow}>
             {prompt?.terms?.map((term, i) => (
+              <View key={i} style={styles.termChipWrapper}>
+                {newDevices.has(term.id) && (
+                  <Text style={styles.newDeviceLabel}>New</Text>
+                )}
               <TouchableOpacity
-                key={i}
                 style={styles.termChip}
                 onPress={() => !isSpinning && openTermDetail(term)}
                 activeOpacity={isSpinning ? 1 : 0.7}
@@ -709,6 +725,7 @@ export default function HomeScreen() {
                   reverse
                 />
               </TouchableOpacity>
+              </View>
             ))}
           </View>
         </View>
@@ -1051,6 +1068,17 @@ const styles = StyleSheet.create({
   },
   termReelContainer: {
     minWidth: 28,
+  },
+  newDeviceLabel: {
+    fontFamily: Font.serif,
+    fontSize: 9,
+    color: Colors.accent,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  termChipWrapper: {
+    alignItems: 'center',
   },
 
   //  Encouragement

@@ -163,10 +163,9 @@ async function fetchQuote(): Promise<{ quote: string; author: string }> {
 
 /** Returns today's prompt. */
 import { localDateString, todayLocalDate } from './dates';
+import { getCuratedSelection } from './curation';
 
 export async function getDailyPrompt(date: Date): Promise<Prompt> {
-  // simple cache so the quote stays the same during the day without
-  // hammering the remote API repeatedly in a single session.
   const key = 'pensee.dailyPrompt';
   if (typeof localStorage !== 'undefined') {
     try {
@@ -177,21 +176,49 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
           return obj.prompt;
         }
       }
-    } catch {
-      // ignore parse errors
-    }
-  }
-
-  const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
-  const terms = pickTerms(seed);
-  const { quote, author } = await fetchQuote();
-  const prompt: Prompt = { text: quote, terms, author };
-  if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(key, JSON.stringify({ date: todayLocalDate(), prompt }));
     } catch {}
   }
-  return prompt;
+
+  try {
+    const curated = await getCuratedSelection(date);
+
+    // Build terms from curated selection
+    const terms: Term[] = [
+      ...curated.devices.map(d => ({ id: d, label: d })),
+      { id: curated.vocabWord, label: curated.vocabWord },
+    ];
+
+    // Try to fetch a fresh quote, fall back to curated prompt text
+    let text = curated.prompt.text;
+    let author = curated.prompt.author;
+    try {
+      const fetched = await fetchQuote();
+      if (fetched.quote) {
+        text = fetched.quote;
+        author = fetched.author;
+      }
+    } catch {}
+
+    const prompt: Prompt = { text, terms, author };
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, JSON.stringify({ date: todayLocalDate(), prompt }));
+      } catch {}
+    }
+    return prompt;
+  } catch {
+    // Fallback to original seeded logic
+    const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
+    const terms = pickTerms(seed);
+    const { quote, author } = await fetchQuote();
+    const prompt: Prompt = { text: quote, terms, author };
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, JSON.stringify({ date: todayLocalDate(), prompt }));
+      } catch {}
+    }
+    return prompt;
+  }
 }
 
 /** Returns a freshly randomised prompt (for the shuffle button). */

@@ -17,6 +17,7 @@ import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { todayLocalDate } from '../../utils/dates';
 import { Term } from '../../utils/prompts';
 import { saveSession } from '../../utils/storage';
+import { updateDeviceRating, incrementSessionCount } from '../../utils/curation';
 
 type Props = {
   visible: boolean;
@@ -79,6 +80,11 @@ export default function ReflectionModal({
         terms,
         image: scanImage,
       });
+      // Update curation system with device ratings
+      for (const [deviceId, rating] of Object.entries(deviceRatings)) {
+        await updateDeviceRating(deviceId, rating);
+      }
+      await incrementSessionCount();
       reset();
       onSave?.();
       onClose();
