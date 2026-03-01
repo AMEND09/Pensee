@@ -43,6 +43,9 @@ app-example
 /ios
 /android
 
+# tesseract training data
+eng.traineddata
+
 # remotion reel renders
 marketing/reel-remotion/renders/
 marketing

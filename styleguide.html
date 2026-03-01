@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pensee -- Instagram Post Style Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --paper:     #faf8f7;
+      --ink:       #3d2b1f;
+      --ink-mid:   #7a6055;
+      --ink-muted: #a89688;
+      --rust:      #b8622a;
+      --rust-dark: #8f4a1c;
+      --border:    #d0c0af;
+      --border-lt: #e4d8c8;
+      --chip-bg:   #ece2d8;
+      --chip-text: #5c3d2e;
+      --dark:      #2c1d14;
+      --darker:    #1c110a;
+      --page-bg:   #13100e;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--page-bg);
+      color: #c8b8a8;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 48px 120px;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      padding-bottom: 72px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 72px;
+    }
+    .cover-eyebrow {
+      font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
+      color: var(--rust); margin-bottom: 20px;
+    }
+    .cover-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 52px; font-weight: 700; line-height: 1.08;
+      color: #f0e8e0; margin-bottom: 8px;
+    }
+    .cover-title em { font-style: italic; color: var(--rust); }
+    .cover-subtitle {
+      font-size: 16px; font-weight: 300;
+      color: rgba(249,245,241,.5); margin-bottom: 32px; line-height: 1.6;
+    }
+    .cover-meta {
+      display: flex; gap: 32px;
+    }
+    .cover-meta-item { }
+    .cover-meta-label {
+      font-size: 9px; letter-spacing: .22em; text-transform: uppercase;
+      color: rgba(249,245,241,.3); margin-bottom: 3px;
+    }
+    .cover-meta-value {
+      font-size: 13px; color: rgba(249,245,241,.65);
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 72px;
+    }
+    .toc-title {
+      font-size: 10px; letter-spacing: .25em; text-transform: uppercase;
+      color: var(--rust); margin-bottom: 18px;
+    }
+    .toc-list { display: flex; flex-direction: column; gap: 0; }
+    .toc-item {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+      text-decoration: none;
+    }
+    .toc-item:last-child { border-bottom: none; }
+    .toc-item-label { font-size: 13px; color: rgba(249,245,241,.7); }
+    .toc-item-label span { color: var(--rust); margin-right: 10px; font-variant-numeric: tabular-nums; }
+    .toc-item-dots { flex: 1; border-bottom: 1px dotted rgba(255,255,255,.1); margin: 0 12px 3px; }
+    .toc-item-num { font-size: 11px; color: rgba(249,245,241,.3); font-variant-numeric: tabular-nums; }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 80px;
+    }
+    .section-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 32px; padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .section-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px; font-weight: 700;
+      color: rgba(184,98,42,.3); line-height: 1; flex-shrink: 0;
+    }
+    .section-title-block { }
+    .section-eyebrow {
+      font-size: 9px; letter-spacing: .25em; text-transform: uppercase;
+      color: var(--rust); margin-bottom: 4px;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 700; color: #f0e8e0; line-height: 1.15;
+    }
+
+    /* ── PROSE ── */
+    .prose {
+      font-size: 14px; color: rgba(249,245,241,.6); line-height: 1.8;
+      margin-bottom: 24px;
+    }
+    .prose strong { color: rgba(249,245,241,.85); font-weight: 600; }
+    .prose code {
+      font-family: 'Courier New', monospace; font-size: 12px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 4px; padding: 1px 6px; color: #f0c9a0;
+    }
+
+    /* ── RULE ── */
+    .rule { width: 36px; height: 2px; background: var(--rust); margin: 20px 0; }
+
+    /* ── COLOUR PALETTE ── */
+    .palette { display: flex; flex-direction: column; gap: 12px; }
+    .palette-row { display: flex; gap: 10px; }
+    .swatch-card {
+      flex: 1; border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.07);
+    }
+    .swatch-color { height: 56px; }
+    .swatch-info { padding: 10px 12px; background: rgba(255,255,255,.04); }
+    .swatch-name { font-size: 11px; font-weight: 600; color: rgba(249,245,241,.8); margin-bottom: 2px; }
+    .swatch-hex  { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(249,245,241,.4); }
+    .swatch-use  { font-size: 10px; color: rgba(249,245,241,.35); margin-top: 3px; line-height: 1.4; }
+
+    /* ── TYPOGRAPHY SPECIMENS ── */
+    .type-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .type-table th {
+      text-align: left; font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+      color: rgba(249,245,241,.3); padding: 0 0 10px; border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .type-table td {
+      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+      vertical-align: baseline;
+    }
+    .type-table tr:last-child td { border-bottom: none; }
+    .type-table .col-specimen { width: 55%; }
+    .type-table .col-role { width: 20%; font-size: 11px; color: rgba(249,245,241,.35); }
+    .type-table .col-spec  { width: 25%; font-family: 'Courier New', monospace; font-size: 10px; color: rgba(249,245,241,.3); line-height: 1.6; }
+
+    /* ── CODE BLOCKS ── */
+    .code-block {
+      background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 20px 22px; margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .code-block code {
+      font-family: 'Courier New', monospace; font-size: 12px;
+      color: #c8d8c0; line-height: 1.75; display: block;
+      background: none; border: none; padding: 0;
+    }
+    .code-label {
+      font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+      color: rgba(249,245,241,.25); margin-bottom: 10px;
+    }
+    .cm  { color: rgba(249,245,241,.3); }   /* comment */
+    .ck  { color: #9ab8d0; }                 /* property key */
+    .cv  { color: #f0c9a0; }                 /* value */
+    .cs  { color: #b0d0b0; }                 /* string */
+
+    /* ── GRID PREVIEWS ── */
+    .mode-demos { display: flex; gap: 16px; margin-bottom: 28px; }
+    .mode-demo { flex: 1; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.07); }
+    .mode-demo-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .mode-demo-label { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+    .mode-demo-badge { font-size: 9px; border-radius: 100px; padding: 2px 8px; }
+    .mode-demo-content { padding: 16px; }
+    .mode-dark { background: var(--darker); }
+    .mode-dark .mode-demo-label { color: rgba(249,245,241,.45); }
+    .mode-dark .mode-demo-badge { background: rgba(184,98,42,.2); color: var(--rust); border: 1px solid rgba(184,98,42,.3); }
+    .mode-light { background: var(--paper); }
+    .mode-light .mode-demo-label { color: var(--ink-muted); }
+    .mode-light .mode-demo-badge { background: var(--chip-bg); color: var(--chip-text); border: 1px solid var(--border-lt); }
+
+    /* ── BLOB DIAGRAM ── */
+    .blob-demo {
+      position: relative; height: 200px; border-radius: 12px; overflow: hidden;
+      background: var(--darker); border: 1px solid rgba(255,255,255,.07);
+      margin-bottom: 20px;
+    }
+    .blob-demo .b { position: absolute; border-radius: 50%; pointer-events: none; }
+    .blob-label {
+      position: absolute; z-index: 2; font-size: 10px; letter-spacing: .12em;
+      text-transform: uppercase; color: rgba(249,245,241,.55);
+      border: 1px dashed rgba(255,255,255,.2); border-radius: 100px; padding: 3px 10px;
+    }
+    .blob-note { font-size: 12px; color: rgba(249,245,241,.45); line-height: 1.65; }
+
+    /* ── COMPONENT TILES ── */
+    .component-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+    .comp-tile {
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 10px; padding: 18px;
+    }
+    .comp-tile-label {
+      font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--rust); margin-bottom: 12px;
+    }
+
+    /* real component previews */
+    .eyebrow-demo { font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--rust); }
+    .heading-dark  { font-family: 'Playfair Display', serif; font-size: 24px; color: #f9f5f1; line-height: 1.2; margin-top: 6px; }
+    .heading-light { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--ink); line-height: 1.2; margin-top: 6px; }
+    .heading-dark em, .heading-light em { font-style: italic; color: var(--rust); }
+    .rust-rule { width: 32px; height: 2px; background: var(--rust); margin: 10px 0; }
+    .body-dark  { font-size: 12px; color: rgba(249,245,241,.65); line-height: 1.7; }
+    .body-light { font-size: 12px; color: var(--ink-mid); line-height: 1.7; }
+
+    .chip-demo { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .chip-d { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15); border-radius: 100px; padding: 5px 12px; font-family: 'Playfair Display', serif; font-size: 12px; font-style: italic; color: rgba(249,245,241,.65); }
+    .chip-d.active { background: var(--rust); border-color: var(--rust); color: #fff; }
+    .chip-l { background: var(--chip-bg); border: 1px solid var(--border); border-radius: 100px; padding: 3px 11px; font-family: 'Playfair Display', serif; font-size: 11px; color: var(--chip-text); }
+
+    .brand-strip-demo {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px; margin-top: 10px; border-radius: 8px;
+    }
+    .bsd { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); }
+    .bsl { background: rgba(61,43,31,.06); border: 1px solid var(--border-lt); }
+    .bsd .bn { font-family: 'Playfair Display', serif; font-size: 14px; color: rgba(249,245,241,.55); }
+    .bsd .bu { font-size: 10px; color: rgba(249,245,241,.35); }
+    .bsl .bn { font-family: 'Playfair Display', serif; font-size: 14px; color: var(--ink-muted); }
+    .bsl .bu { font-size: 10px; color: var(--border); }
+
+    .card-demo {
+      background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; box-shadow: 0 8px 28px rgba(61,43,31,.1); margin-top: 6px;
+    }
+    .cd-label { font-size: 8px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px; }
+    .cd-value { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--rust); line-height: 1; }
+    .cd-sub { font-size: 10px; color: var(--ink-muted); margin-top: 3px; }
+
+    .divider-demo { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+    .d-line { flex: 1; height: 1px; background: rgba(255,255,255,.1); }
+    .d-rust { width: 36px; height: 2px; background: var(--rust); }
+
+    /* ── RULES TABLE ── */
+    .rules-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .rules-table th {
+      text-align: left; font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+      color: rgba(249,245,241,.3); padding: 0 12px 10px 0; border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .rules-table td {
+      padding: 12px 12px 12px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+      font-size: 13px; color: rgba(249,245,241,.65); vertical-align: top;
+    }
+    .rules-table tr:last-child td { border-bottom: none; }
+    .rules-table td:first-child { color: rgba(249,245,241,.85); font-weight: 500; width: 32%; }
+    .tag-do   { display: inline-block; background: rgba(100,180,100,.15); border: 1px solid rgba(100,180,100,.3); color: #90c890; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 600; margin-right: 6px; }
+    .tag-dont { display: inline-block; background: rgba(200,80,60,.15); border: 1px solid rgba(200,80,60,.3); color: #e08070; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 600; margin-right: 6px; }
+
+    /* ── NOISE DEMO ── */
+    .noise-comp {
+      position: relative; height: 80px; border-radius: 8px; overflow: hidden;
+      background: var(--darker); border: 1px solid rgba(255,255,255,.07);
+    }
+    .noise-comp .noise {
+      position: absolute; inset: 0; opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .noise-comp .label {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: rgba(249,245,241,.45); letter-spacing: .1em;
+    }
+    .noise-row { display: flex; gap: 12px; margin-bottom: 10px; }
+
+    /* ── LAYOUT DIAGRAMS ── */
+    .layout-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .layout-card {
+      border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.07);
+      aspect-ratio: 4/5; position: relative;
+      background: var(--darker);
+    }
+    .layout-card.light { background: var(--paper); }
+    .lc-eyebrow { position: absolute; top: 14px; left: 14px; right: 14px; height: 5px; border-radius: 3px; background: rgba(184,98,42,.5); }
+    .lc-heading { position: absolute; top: 26px; left: 14px; right: 14px; }
+    .lc-h-line { height: 7px; border-radius: 3px; margin-bottom: 4px; background: rgba(249,245,241,.5); }
+    .lc-h-line.dark-l { background: rgba(61,43,31,.5); }
+    .lc-h-line2 { width: 60%; }
+    .lc-block { position: absolute; left: 14px; right: 14px; bottom: 28px; }
+    .lc-row { height: 6px; border-radius: 3px; margin-bottom: 5px; background: rgba(255,255,255,.12); }
+    .lc-row.light-r { background: rgba(61,43,31,.12); }
+    .lc-row.short { width: 65%; }
+    .lc-card { position: absolute; left: 14px; right: 14px; top: 65px; bottom: 28px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 6px; }
+    .lc-card.light-c { background: #fff; border-color: var(--border-lt); }
+    .lc-brand { position: absolute; bottom: 0; left: 0; right: 0; height: 22px; border-top: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; }
+    .lc-brand.light-b { border-top-color: var(--border-lt); }
+    .lc-dot { width: 24px; height: 4px; border-radius: 2px; background: rgba(249,245,241,.25); }
+    .lc-dot.light-d { background: rgba(61,43,31,.2); }
+    .lc-dot2 { width: 16px; height: 4px; border-radius: 2px; background: rgba(249,245,241,.1); }
+    .lc-dot2.light-d2 { background: rgba(61,43,31,.1); }
+    .layout-name { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: rgba(249,245,241,.3); text-align: center; margin-top: 6px; }
+
+    /* ── MINI POST PREVIEW ── */
+    .mini-post {
+      width: 160px; height: 200px; border-radius: 8px; overflow: hidden;
+      position: relative; flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.07);
+    }
+
+    /* ── ICON SECTION ── */
+    .icon-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .icon-tile {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 8px; padding: 14px 16px; width: 88px;
+    }
+    .icon-tile svg { color: rgba(249,245,241,.6); }
+    .icon-tile span { font-size: 9px; color: rgba(249,245,241,.35); letter-spacing: .06em; text-align: center; }
+
+    /* ── SPACING SYSTEM ── */
+    .spacing-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
+    .spacing-block { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .spacing-bar { background: rgba(184,98,42,.35); border: 1px solid rgba(184,98,42,.5); border-radius: 3px; width: 32px; }
+    .spacing-val { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(249,245,241,.45); }
+    .spacing-label { font-size: 9px; color: rgba(249,245,241,.3); letter-spacing: .08em; }
+
+    /* ── APP SECTION ── */
+    .app-overview {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px;
+    }
+    .app-pillar {
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px; padding: 20px 22px;
+    }
+    .ap-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(184,98,42,.15); border: 1px solid rgba(184,98,42,.25); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+    .ap-icon svg { color: var(--rust); }
+    .ap-title { font-size: 13px; font-weight: 600; color: rgba(249,245,241,.85); margin-bottom: 6px; }
+    .ap-desc { font-size: 12px; color: rgba(249,245,241,.55); line-height: 1.65; }
+
+    .audience-row { display: flex; gap: 12px; margin-bottom: 28px; }
+    .audience-card {
+      flex: 1; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 10px; padding: 16px 18px;
+    }
+    .ac-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--rust); margin-bottom: 8px; }
+    .ac-name { font-family: 'Playfair Display', serif; font-size: 16px; color: rgba(249,245,241,.85); margin-bottom: 6px; }
+    .ac-desc { font-size: 12px; color: rgba(249,245,241,.55); line-height: 1.6; }
+
+    .mission-block {
+      background: rgba(184,98,42,.08); border: 1px solid rgba(184,98,42,.2);
+      border-radius: 12px; padding: 24px 28px; margin-bottom: 28px;
+    }
+    .mission-label { font-size: 9px; letter-spacing: .25em; text-transform: uppercase; color: var(--rust); margin-bottom: 10px; }
+    .mission-text { font-family: 'Playfair Display', serif; font-size: 20px; line-height: 1.45; color: #f9f5f1; font-style: italic; }
+
+    /* ── POST TYPE CARDS ── */
+    .post-types { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .pt-row { display: flex; gap: 12px; }
+    .pt-card {
+      flex: 1; border-radius: 10px; padding: 16px 18px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+    }
+    .pt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .pt-name { font-size: 13px; font-weight: 600; color: rgba(249,245,241,.85); }
+    .pt-badge { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; border-radius: 100px; padding: 2px 8px; }
+    .pt-badge.dark  { background: rgba(28,17,10,.8); border: 1px solid rgba(255,255,255,.12); color: rgba(249,245,241,.5); }
+    .pt-badge.light { background: var(--chip-bg); border: 1px solid var(--border-lt); color: var(--chip-text); }
+    .pt-badge.both  { background: rgba(184,98,42,.15); border: 1px solid rgba(184,98,42,.3); color: var(--rust); }
+    .pt-examples { font-size: 11px; color: rgba(249,245,241,.45); line-height: 1.6; margin-bottom: 6px; }
+    .pt-examples em { color: rgba(249,245,241,.65); font-style: normal; }
+    .pt-rule { font-size: 11px; color: rgba(249,245,241,.55); line-height: 1.55; }
+
+    /* ── GOOD POST CHECKLIST ── */
+    .checklist { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
+    .cl-item {
+      display: flex; gap: 14px; align-items: flex-start; padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .cl-item:last-child { border-bottom: none; }
+    .cl-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .cl-icon.pass { background: rgba(100,180,100,.15); border: 1px solid rgba(100,180,100,.25); }
+    .cl-icon.pass svg { color: #7ac87a; }
+    .cl-icon.fail { background: rgba(200,80,60,.12); border: 1px solid rgba(200,80,60,.2); }
+    .cl-icon.fail svg { color: #d87060; }
+    .cl-body { flex: 1; }
+    .cl-title { font-size: 13px; font-weight: 600; color: rgba(249,245,241,.85); margin-bottom: 3px; }
+    .cl-desc { font-size: 12px; color: rgba(249,245,241,.55); line-height: 1.6; }
+
+    /* ── POST ANATOMY DIAGRAM ── */
+    .anatomy-wrap { display: flex; gap: 32px; margin-bottom: 28px; align-items: flex-start; }
+    .anatomy-post {
+      width: 200px; height: 250px; flex-shrink: 0; border-radius: 10px;
+      background: var(--darker); border: 1px solid rgba(255,255,255,.1);
+      position: relative; overflow: hidden;
+    }
+    .anatomy-post .ab { position: absolute; border-radius: 50%; pointer-events: none; }
+    .anat-zone {
+      position: absolute; border: 1.5px dashed rgba(184,98,42,.6);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    }
+    .anat-num {
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; border-radius: 50%; background: var(--rust);
+      color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    .anatomy-legend { flex: 1; }
+    .al-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+    .al-num { width: 18px; height: 18px; border-radius: 50%; background: var(--rust); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .al-text { }
+    .al-title { font-size: 13px; font-weight: 600; color: rgba(249,245,241,.8); }
+    .al-desc  { font-size: 11px; color: rgba(249,245,241,.45); line-height: 1.5; margin-top: 2px; }
+
+    /* ── VISUAL QUALITY ── */
+    .vq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+    .vq-card {
+      border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.07);
+    }
+    .vq-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+    .vq-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+    .vq-pass { background: rgba(100,180,100,.1); border-bottom: 1px solid rgba(100,180,100,.2); }
+    .vq-pass .vq-label { color: #7ac87a; }
+    .vq-fail { background: rgba(200,80,60,.08); border-bottom: 1px solid rgba(200,80,60,.15); }
+    .vq-fail .vq-label { color: #d87060; }
+    .vq-body { padding: 14px; background: rgba(255,255,255,.02); }
+    .vq-body p { font-size: 12px; color: rgba(249,245,241,.55); line-height: 1.6; }
+    .vq-body strong { color: rgba(249,245,241,.8); }
+
+    /* ── FOOTER ── */
+    .sg-footer {
+      margin-top: 80px; padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,.07);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sg-footer-brand { font-family: 'Playfair Display', serif; font-size: 18px; color: rgba(249,245,241,.3); letter-spacing: .06em; }
+    .sg-footer-note { font-size: 11px; color: rgba(249,245,241,.2); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <div class="cover">
+    <p class="cover-eyebrow">Brand + Design System</p>
+    <h1 class="cover-title">Pensee<br><em>Style Guide</em></h1>
+    <p class="cover-subtitle">A complete reference for creating Instagram posts that match the Pensee visual identity. Covers colour, typography, layout, components, copy rules, and code patterns.</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Format</div>
+        <div class="cover-meta-value">480 x 600 px (4:5 ratio)</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Export</div>
+        <div class="cover-meta-value">2x via html-to-image</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Fonts</div>
+        <div class="cover-meta-value">Playfair Display + Inter</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Posts made</div>
+        <div class="cover-meta-value">25 across 3 volumes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <div class="toc-list">
+      <div class="toc-item"><span class="toc-item-label"><span>00</span>The App</span><div class="toc-item-dots"></div><span class="toc-item-num">0</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>01</span>Colour Palette</span><div class="toc-item-dots"></div><span class="toc-item-num">1</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>02</span>Typography</span><div class="toc-item-dots"></div><span class="toc-item-num">2</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>03</span>Background Modes</span><div class="toc-item-dots"></div><span class="toc-item-num">3</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>04</span>Blob Gradients + Noise</span><div class="toc-item-dots"></div><span class="toc-item-num">4</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>05</span>Layout Patterns</span><div class="toc-item-dots"></div><span class="toc-item-num">5</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>06</span>Components</span><div class="toc-item-dots"></div><span class="toc-item-num">6</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>07</span>Spacing System</span><div class="toc-item-dots"></div><span class="toc-item-num">7</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>08</span>Icons</span><div class="toc-item-dots"></div><span class="toc-item-num">8</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>09</span>Copy Rules</span><div class="toc-item-dots"></div><span class="toc-item-num">9</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>10</span>Code Boilerplate</span><div class="toc-item-dots"></div><span class="toc-item-num">10</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>11</span>What Makes a Good Post: Content</span><div class="toc-item-dots"></div><span class="toc-item-num">11</span></div>
+      <div class="toc-item"><span class="toc-item-label"><span>12</span>What Makes a Good Post: Visuals</span><div class="toc-item-dots"></div><span class="toc-item-num">12</span></div>
+    </div>
+  </div>
+
+
+
+  <!-- 00 THE APP -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">00</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Foundation</div>
+        <div class="section-title">The App</div>
+      </div>
+    </div>
+
+    <p class="prose">Every design decision in this system flows from a clear understanding of what Pensee is, who it is for, and what it believes. Read this section before building anything.</p>
+
+    <div class="mission-block">
+      <div class="mission-label">Core proposition</div>
+      <div class="mission-text">"AI is writing for a generation that is forgetting how. Pensee is built for the ones who want to remember."</div>
+    </div>
+
+    <p class="prose"><strong>What Pensee is.</strong> Pensee is a daily writing practice app. Each morning it gives the user one carefully selected literary quote, a ten-minute countdown timer, and three rhetorical or vocabulary tools woven into the prompt. The session ends. The writing is saved. The user returns tomorrow. That is the entire loop.</p>
+
+    <p class="prose">It is deliberately narrow. No community features. No sharing. No audience. No AI ghostwriting the response. The point is that the user writes, in their own voice, under mild time pressure, every single day. The app tracks streaks, word counts, vocabulary growth, device usage, and session history. Over weeks, this compounds into a measurable improvement in voice and fluency.</p>
+
+    <div class="app-overview">
+      <div class="app-pillar">
+        <div class="ap-icon"><i data-lucide="timer" style="width:16px;height:16px;"></i></div>
+        <div class="ap-title">10-minute timed sessions</div>
+        <div class="ap-desc">A countdown timer removes decision paralysis. The user cannot overthink. They press start and write until the clock stops.</div>
+      </div>
+      <div class="app-pillar">
+        <div class="ap-icon"><i data-lucide="quote" style="width:16px;height:16px;"></i></div>
+        <div class="ap-title">One curated quote per day</div>
+        <div class="ap-desc">A new literary quote each morning serves as the spark. Users respond to it, push against it, or use it as a point of departure.</div>
+      </div>
+      <div class="app-pillar">
+        <div class="ap-icon"><i data-lucide="book-open" style="width:16px;height:16px;"></i></div>
+        <div class="ap-title">Built-in rhetoric and vocabulary</div>
+        <div class="ap-desc">Each prompt includes three techniques -- rhetorical devices like chiasmus, sonic devices like assonance, or vocabulary words like ephemeral. Users log which ones they used.</div>
+      </div>
+      <div class="app-pillar">
+        <div class="ap-icon"><i data-lucide="trending-up" style="width:16px;height:16px;"></i></div>
+        <div class="ap-title">Progress tracking</div>
+        <div class="ap-desc">Streaks, word count averages, session history, vocabulary range growth, and a weekly report card show users that they are actually improving.</div>
+      </div>
+      <div class="app-pillar">
+        <div class="ap-icon"><i data-lucide="camera" style="width:16px;height:16px;"></i></div>
+        <div class="ap-title">OCR handwriting scan</div>
+        <div class="ap-desc">Users who prefer pen and paper can photograph their handwritten session. OCR converts it to digital text instantly, preserving it in their history.</div>
+      </div>
+      <div class="app-pillar">
+        <div class="ap-icon"><i data-lucide="search" style="width:16px;height:16px;"></i></div>
+        <div class="ap-title">Built-in dictionary</div>
+        <div class="ap-desc">Look up any word without leaving the app. Definitions, part of speech, example sentences, and synonyms appear inline so flow is never broken.</div>
+      </div>
+    </div>
+
+    <p class="prose"><strong>What Pensee is not.</strong> It is not a notes app, a journal with prompts, a grammar checker, or an AI writing assistant. It does not help users produce content for an audience. It helps them develop a voice for themselves. This distinction matters in every post: the app is positioned against AI writing tools, not alongside them.</p>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>Target audience.</strong> The posts speak to three overlapping groups:</p>
+
+    <div class="audience-row">
+      <div class="audience-card">
+        <div class="ac-label">Primary</div>
+        <div class="ac-name">The lapsed writer</div>
+        <div class="ac-desc">Someone who used to write and has drifted. A former English student, a person who kept journals in their teens and stopped. They believe they have lost something. Pensee positions itself as the way to get it back.</div>
+      </div>
+      <div class="audience-card">
+        <div class="ac-label">Secondary</div>
+        <div class="ac-name">The AI-resistant</div>
+        <div class="ac-desc">Someone who has noticed that AI is eroding their ability to think in sentences. Professionals, students, or knowledge workers who feel vaguely unease about what is being outsourced. The anti-AI messaging speaks directly to them.</div>
+      </div>
+      <div class="audience-card">
+        <div class="ac-label">Tertiary</div>
+        <div class="ac-name">The ambitious student</div>
+        <div class="ac-desc">A high schooler or undergraduate who wants to write better. Interested in rhetorical devices, vocabulary, technique. The literary and educational angle -- devices, annotation, etymology -- is for them.</div>
+      </div>
+    </div>
+
+    <p class="prose"><strong>The emotional register.</strong> Pensee is warm but not cheerful. Serious but not severe. Literary without being pretentious. The posts should feel like a well-worn desk, a page of notes in good handwriting, a quote that stays with you. They should never feel like a productivity app, a self-help product, or a Silicon Valley startup.</p>
+  </div>
+
+
+
+  <!-- 01 COLOUR -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Foundation</div>
+        <div class="section-title">Colour Palette</div>
+      </div>
+    </div>
+
+    <p class="prose">The palette has two families: a warm <strong>paper-and-ink</strong> set for light backgrounds, and a deep <strong>dark-brown</strong> set for dark backgrounds. Rust is the single accent used on both. Never introduce new hues.</p>
+
+    <div class="palette">
+      <div class="palette-row">
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#b8622a;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Rust</div>
+            <div class="swatch-hex">#b8622a &nbsp;--rust</div>
+            <div class="swatch-use">Primary accent. Headlines, dividers, chips, CTAs, italic highlights.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#8f4a1c;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Rust Dark</div>
+            <div class="swatch-hex">#8f4a1c &nbsp;--rust-dark</div>
+            <div class="swatch-use">Hover states and pressed states only.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#ede0d4;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Rust Muted</div>
+            <div class="swatch-hex">#ede0d4 &nbsp;--rust-muted</div>
+            <div class="swatch-use">Subtle rust-tinted backgrounds on light posts.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="palette-row">
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#faf8f7;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Paper</div>
+            <div class="swatch-hex">#faf8f7 &nbsp;--paper</div>
+            <div class="swatch-use">Light post background. Slightly warm off-white.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#3d2b1f;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Ink</div>
+            <div class="swatch-hex">#3d2b1f &nbsp;--ink</div>
+            <div class="swatch-use">Primary text on light backgrounds.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#7a6055;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Ink Mid</div>
+            <div class="swatch-hex">#7a6055 &nbsp;--ink-mid</div>
+            <div class="swatch-use">Secondary/body copy on light. Never on dark.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#a89688;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Ink Muted</div>
+            <div class="swatch-hex">#a89688 &nbsp;--ink-muted</div>
+            <div class="swatch-use">Labels, attributions, timestamps on light.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="palette-row">
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#1c110a;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Darker</div>
+            <div class="swatch-hex">#1c110a &nbsp;--darker</div>
+            <div class="swatch-use">Dark post background. The deep base.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#d0c0af;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Border</div>
+            <div class="swatch-hex">#d0c0af &nbsp;--border</div>
+            <div class="swatch-use">Card borders, chip borders on light.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#e4d8c8;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Border Light</div>
+            <div class="swatch-hex">#e4d8c8 &nbsp;--border-lt</div>
+            <div class="swatch-use">Subtle dividers and row separators on light.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#ece2d8;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Chip Background</div>
+            <div class="swatch-hex">#ece2d8 &nbsp;--chip-bg</div>
+            <div class="swatch-use">Pill/chip fill on white cards and light posts.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <p class="prose"><strong>Dark background text opacity rules.</strong> On dark posts, use <code>rgba(249,245,241, X)</code> where X is chosen by hierarchy. Never go below 0.55 for any text the reader must actually read.</p>
+      <table class="rules-table" style="margin-top:12px;">
+        <tr><th>Role</th><th>Value</th><th>Example use</th></tr>
+        <tr><td>Primary text</td><td><code>#f9f5f1</code> or <code>rgba(..., 1)</code></td><td>Main headline, critical statement</td></tr>
+        <tr><td>Secondary text</td><td><code>rgba(249,245,241, .85)</code></td><td>Definition body, annotation text</td></tr>
+        <tr><td>Supporting text</td><td><code>rgba(249,245,241, .72)</code></td><td>Elaboration paragraphs</td></tr>
+        <tr><td>Muted / meta</td><td><code>rgba(249,245,241, .65)</code></td><td>Footer copy, sub-text, note</td></tr>
+        <tr><td>Labels / eyebrow</td><td><code>rgba(249,245,241, .55)</code></td><td>Secondary eyebrow, phonetics</td></tr>
+        <tr><td>Intentionally dim</td><td><code>rgba(249,245,241, .45)</code></td><td>De-emphasised contrast element</td></tr>
+        <tr><td>Brand strip URL</td><td><code>rgba(249,245,241, .35)</code></td><td>pensee.app in footer only</td></tr>
+        <tr><td>Never use below</td><td><code>rgba(249,245,241, .35)</code></td><td>Anything below this is illegible</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-top:20px;">
+      <p class="prose"><strong>Blob colours.</strong> Blobs are always one of two source colours, never anything else:</p>
+      <div class="palette-row" style="margin-top:10px;">
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#fadac1;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Warm Peach</div>
+            <div class="swatch-hex">#fadac1</div>
+            <div class="swatch-use">Primary blob on both dark and light. Gives warmth.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#f5c9a0;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Warm Amber</div>
+            <div class="swatch-hex">#f5c9a0 / #f0c9a0</div>
+            <div class="swatch-use">Secondary blob on light posts. Slightly deeper.</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-color" style="background:#b8622a;"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Rust (blob)</div>
+            <div class="swatch-hex">#b8622a</div>
+            <div class="swatch-use">Secondary blob on dark posts. Adds depth and warmth.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 02 TYPOGRAPHY -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Foundation</div>
+        <div class="section-title">Typography</div>
+      </div>
+    </div>
+
+    <p class="prose">Two fonts only. <strong>Playfair Display</strong> for all display text -- headlines, pull quotes, big numbers, word entries, and italic emphasis. <strong>Inter</strong> for all UI text -- eyebrows, labels, body copy, chips, and captions. Never reverse this: Inter headlines look wrong; Playfair body paragraphs are too heavy.</p>
+
+    <table class="type-table">
+      <thead>
+        <tr>
+          <th class="col-specimen">Specimen</th>
+          <th class="col-role">Role</th>
+          <th class="col-spec">Spec</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#f9f5f1;line-height:1;">Be the one.</span></td>
+          <td class="col-role">Hero headline</td>
+          <td class="col-spec">Playfair 700<br>30-52px<br>lh 1.08-1.2</td>
+        </tr>
+        <tr>
+          <td><span style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#f9f5f1;">Writing is thinking.</span></td>
+          <td class="col-role">Section heading</td>
+          <td class="col-spec">Playfair 700<br>26-29px<br>lh 1.18-1.2</td>
+        </tr>
+        <tr>
+          <td><span style="font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#f9f5f1;">"A word after a word after a word is power."</span></td>
+          <td class="col-role">Pull quote</td>
+          <td class="col-spec">Playfair 400 italic<br>14-26px<br>lh 1.42-1.5</td>
+        </tr>
+        <tr>
+          <td><span style="font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:var(--rust);line-height:1;">267</span></td>
+          <td class="col-role">Stat / number</td>
+          <td class="col-spec">Playfair 700<br>32-96px<br>lh 1</td>
+        </tr>
+        <tr>
+          <td><span style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--rust);">ephemeral</span></td>
+          <td class="col-role">Word entry</td>
+          <td class="col-spec">Playfair italic<br>17-22px</td>
+        </tr>
+        <tr>
+          <td><span style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--rust);">Feature spotlight</span></td>
+          <td class="col-role">Eyebrow</td>
+          <td class="col-spec">Inter 400<br>10px<br>ls 0.3em caps</td>
+        </tr>
+        <tr>
+          <td><span style="font-size:13px;font-weight:300;color:rgba(249,245,241,.65);line-height:1.7;">One prompt, one session, one day at a time.</span></td>
+          <td class="col-role">Body / sub-text</td>
+          <td class="col-spec">Inter 300<br>12-14px<br>lh 1.65-1.8</td>
+        </tr>
+        <tr>
+          <td><span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(249,245,241,.6);">Rhetorical Device</span></td>
+          <td class="col-role">Micro label</td>
+          <td class="col-spec">Inter 400<br>9px<br>ls 0.14-0.2em caps</td>
+        </tr>
+        <tr>
+          <td><span style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:var(--chip-text);background:var(--chip-bg);border:1px solid var(--border);border-radius:100px;padding:4px 12px;display:inline-block;">chiasmus</span></td>
+          <td class="col-role">Pill / chip</td>
+          <td class="col-spec">Playfair italic<br>11-13px<br>border-radius 100px</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="prose"><strong>Italic in headlines.</strong> When using <code>&lt;em&gt;</code> inside a Playfair heading, the italic word is always coloured <code>var(--rust)</code>. This is a consistent brand signature. Never italicise for decoration alone -- only on the key word or phrase.</p>
+    <p class="prose"><strong>Wavy underline.</strong> Used sparingly (once per batch, if at all) to mark a pivotal phrase: <code style="font-size:11px;">text-decoration: underline wavy var(--rust); text-underline-offset: 6px;</code></p>
+    <p class="prose"><strong>Strikethrough.</strong> For the "AI writes for you" contrast pattern only. Never use for emphasis.</p>
+  </div>
+
+
+  <!-- 03 BACKGROUND MODES -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Foundation</div>
+        <div class="section-title">Background Modes</div>
+      </div>
+    </div>
+
+    <p class="prose">Every post is either <strong>dark</strong> or <strong>light</strong>. Alternate between the two across a series to avoid visual monotony. Never mix both within a single post. The card pattern (white card on a light background) is an exception -- white card sits on <code>--paper</code>, not on dark.</p>
+
+    <div class="mode-demos">
+      <div class="mode-demo mode-dark">
+        <div class="mode-demo-header">
+          <span class="mode-demo-label">Dark mode</span>
+          <span class="mode-demo-badge">darker</span>
+        </div>
+        <div class="mode-demo-content">
+          <div style="font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--rust);margin-bottom:8px;">Eyebrow label</div>
+          <div style="font-family:'Playfair Display',serif;font-size:20px;color:#f9f5f1;line-height:1.2;margin-bottom:8px;">Headline goes <em style="color:var(--rust);font-style:italic;">here.</em></div>
+          <div style="font-size:12px;color:rgba(249,245,241,.65);line-height:1.65;">Supporting copy in muted warm white. Legible, never grey.</div>
+        </div>
+      </div>
+      <div class="mode-demo mode-light">
+        <div class="mode-demo-header">
+          <span class="mode-demo-label">Light mode</span>
+          <span class="mode-demo-badge">paper</span>
+        </div>
+        <div class="mode-demo-content">
+          <div style="font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--rust);margin-bottom:8px;">Eyebrow label</div>
+          <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--ink);line-height:1.2;margin-bottom:8px;">Headline goes <em style="color:var(--rust);font-style:italic;">here.</em></div>
+          <div style="font-size:12px;color:var(--ink-mid);line-height:1.65;">Supporting copy in ink-mid. Warm brown, never black or grey.</div>
+        </div>
+      </div>
+    </div>
+
+    <table class="rules-table">
+      <tr><th>Token</th><th>Dark post</th><th>Light post</th></tr>
+      <tr><td>Background</td><td><code>#1c110a</code> (--darker)</td><td><code>#faf8f7</code> (--paper)</td></tr>
+      <tr><td>Headline</td><td><code>#f9f5f1</code></td><td><code>#3d2b1f</code> (--ink)</td></tr>
+      <tr><td>Body copy</td><td><code>rgba(249,245,241,.65-.72)</code></td><td><code>#7a6055</code> (--ink-mid)</td></tr>
+      <tr><td>Labels / meta</td><td><code>rgba(249,245,241,.55)</code></td><td><code>#a89688</code> (--ink-muted)</td></tr>
+      <tr><td>Dividers</td><td><code>rgba(255,255,255,.10-.15)</code></td><td><code>#e4d8c8</code> (--border-lt)</td></tr>
+      <tr><td>Brand strip border</td><td><code>rgba(255,255,255,.12)</code></td><td><code>#e4d8c8</code> (--border-lt)</td></tr>
+      <tr><td>Inner card fill</td><td>N/A (no white cards on dark)</td><td><code>#ffffff</code></td></tr>
+    </table>
+  </div>
+
+
+  <!-- 04 BLOBS + NOISE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Texture</div>
+        <div class="section-title">Blob Gradients + Noise</div>
+      </div>
+    </div>
+
+    <p class="prose">Every post has both a noise overlay and at least one blob gradient. Together they give the flat HTML surfaces a handmade, press-printed quality. Neither element is decorative -- they are structural to the visual identity.</p>
+
+    <div class="blob-demo">
+      <div class="b" style="width:260px;height:260px;background:#fadac1;filter:blur(70px);opacity:.55;top:-70px;right:-60px;"></div>
+      <div class="b" style="width:180px;height:180px;background:#b8622a;filter:blur(60px);opacity:.5;bottom:-50px;left:-50px;"></div>
+      <div class="b" style="width:180px;height:180px;background:#fadac1;filter:blur(50px);opacity:.3;bottom:0;right:160px;"></div>
+      <span class="blob-label" style="top:14px;left:14px;">Blob 1: warm peach, opacity .09-.13, blur 65-100px</span>
+      <span class="blob-label" style="bottom:14px;right:14px;">Blob 2: rust, opacity .1-.13, blur 75-100px</span>
+    </div>
+
+    <p class="prose"><strong>Blob rules.</strong> Always position blobs so they bleed off at least one edge -- they should never float visibly inside the frame. Use <code>filter: blur(65px)</code> minimum; anything sharper looks digital rather than organic. On dark posts, keep blob opacity between 0.07 and 0.13. On light posts, raise it to 0.4-0.7 since the pale background needs more warmth to read as non-sterile.</p>
+
+    <div class="code-block">
+      <div class="code-label">Blob pattern -- dark post (1-2 blobs)</div>
+      <code>
+<span class="cm">/* Blob always positioned to bleed off an edge */</span>
+<span class="ck">.b1</span> {
+  <span class="ck">position</span>: <span class="cv">absolute</span>;
+  <span class="ck">width</span>: <span class="cv">340px</span>; <span class="ck">height</span>: <span class="cv">340px</span>;
+  <span class="ck">border-radius</span>: <span class="cv">50%</span>;
+  <span class="ck">background</span>: <span class="cs">#fadac1</span>;       <span class="cm">/* warm peach */</span>
+  <span class="ck">filter</span>: <span class="cv">blur(70px)</span>;
+  <span class="ck">opacity</span>: <span class="cv">.12</span>;              <span class="cm">/* 0.07-0.13 on dark */</span>
+  <span class="ck">top</span>: <span class="cv">-80px</span>; <span class="ck">right</span>: <span class="cv">-80px</span>;  <span class="cm">/* bleed off corner */</span>
+  <span class="ck">pointer-events</span>: <span class="cv">none</span>;
+}
+      </code>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <p class="prose"><strong>Noise overlay.</strong> Applied to every post as the topmost layer. It subtly breaks up flat areas and makes the composition feel physically printed rather than digitally generated. Use <code>opacity: .035</code> as the default; reduce to <code>.02</code> on light posts where it could muddy fine white-card details.</p>
+
+      <div class="noise-row">
+        <div style="flex:1;">
+          <div class="noise-comp">
+            <div class="noise"></div>
+            <div class="label">opacity: .035 (dark default)</div>
+          </div>
+          <p style="font-size:11px;color:rgba(249,245,241,.35);margin-top:6px;text-align:center;">Dark post</p>
+        </div>
+        <div style="flex:1;">
+          <div class="noise-comp" style="background:var(--paper);">
+            <div class="noise" style="opacity:.02;"></div>
+            <div class="label" style="color:rgba(61,43,31,.35);">opacity: .02 (light default)</div>
+          </div>
+          <p style="font-size:11px;color:rgba(249,245,241,.35);margin-top:6px;text-align:center;">Light post</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block" style="margin-top:16px;">
+      <div class="code-label">Noise overlay -- copy this verbatim into every post</div>
+      <code>
+<span class="cm">/* Always z-index:10, always pointer-events:none */</span>
+<span class="ck">.noise</span> {
+  <span class="ck">position</span>: <span class="cv">absolute</span>; <span class="ck">inset</span>: <span class="cv">0</span>;
+  <span class="ck">pointer-events</span>: <span class="cv">none</span>; <span class="ck">z-index</span>: <span class="cv">10</span>;
+  <span class="ck">opacity</span>: <span class="cv">.035</span>;  <span class="cm">/* or .02 on light posts */</span>
+  <span class="ck">background-image</span>: <span class="cv">url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200'
+    xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence
+    type='fractalNoise' baseFrequency='.75' numOctaves='4'
+    stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25'
+    height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")</span>;
+}
+      </code>
+    </div>
+  </div>
+
+
+  <!-- 05 LAYOUT PATTERNS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">05</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Structure</div>
+        <div class="section-title">Layout Patterns</div>
+      </div>
+    </div>
+
+    <p class="prose">Every post is <strong>480 x 600 px</strong> at display size (4:5 Instagram ratio), exported at 2x pixel ratio to produce a 960 x 1200 px PNG. All content lives in a <code>.body</code> div with consistent padding. The brand strip is always absolutely positioned at the bottom.</p>
+
+    <div class="code-block">
+      <div class="code-label">Post shell -- identical on every post</div>
+      <code>
+<span class="cm">/* Outer container -- always 480x600, overflow hidden */</span>
+<span class="ck">.post</span> { <span class="ck">width</span>: <span class="cv">480px</span>; <span class="ck">height</span>: <span class="cv">600px</span>; <span class="ck">position</span>: <span class="cv">relative</span>; <span class="ck">overflow</span>: <span class="cv">hidden</span>; }
+
+<span class="cm">/* Body: z-index 1, always above blobs (z-index 0) and below noise (z-index 10) */</span>
+<span class="ck">.body</span> {
+  <span class="ck">position</span>: <span class="cv">relative</span>; <span class="ck">z-index</span>: <span class="cv">1</span>;
+  <span class="ck">padding</span>: <span class="cv">44px 44px 76px</span>;  <span class="cm">/* 76px bottom = clears brand strip */</span>
+  <span class="ck">height</span>: <span class="cv">100%</span>; <span class="ck">display</span>: <span class="cv">flex</span>; <span class="ck">flex-direction</span>: <span class="cv">column</span>;
+}
+      </code>
+    </div>
+
+    <p class="prose"><strong>Padding conventions.</strong> Standard body padding is <code>44px</code> on all sides except bottom, which is <code>76px</code> to clear the brand strip. More minimal or editorial posts may use <code>48px 48px 76px</code> or <code>52px 48px 76px</code>. Never go below <code>40px</code> on any side.</p>
+
+    <p class="prose"><strong>Six recurring layout archetypes:</strong></p>
+
+    <div class="layout-grid">
+      <div>
+        <div class="layout-card">
+          <div class="lc-eyebrow"></div>
+          <div class="lc-heading">
+            <div class="lc-h-line"></div>
+            <div class="lc-h-line lc-h-line2"></div>
+          </div>
+          <div class="lc-block">
+            <div class="lc-row"></div>
+            <div class="lc-row"></div>
+            <div class="lc-row short"></div>
+          </div>
+          <div class="lc-brand"><div class="lc-dot"></div><div class="lc-dot2"></div></div>
+        </div>
+        <div class="layout-name">Headline + copy</div>
+      </div>
+      <div>
+        <div class="layout-card">
+          <div class="lc-eyebrow"></div>
+          <div class="lc-heading">
+            <div class="lc-h-line"></div>
+          </div>
+          <div class="lc-card"></div>
+          <div class="lc-brand"><div class="lc-dot"></div><div class="lc-dot2"></div></div>
+        </div>
+        <div class="layout-name">Headline + card</div>
+      </div>
+      <div>
+        <div class="layout-card light">
+          <div class="lc-eyebrow"></div>
+          <div class="lc-heading">
+            <div class="lc-h-line lc-h-line dark-l"></div>
+            <div class="lc-h-line lc-h-line2 dark-l"></div>
+          </div>
+          <div class="lc-block" style="bottom:40px;">
+            <div class="lc-row light-r"></div>
+            <div class="lc-row light-r"></div>
+            <div class="lc-row light-r"></div>
+            <div class="lc-row light-r short"></div>
+          </div>
+          <div class="lc-brand light-b"><div class="lc-dot light-d"></div><div class="lc-dot2 light-d2"></div></div>
+        </div>
+        <div class="layout-name">List / rows</div>
+      </div>
+      <div>
+        <div class="layout-card" style="display:flex;align-items:center;justify-content:center;">
+          <div style="text-align:center;padding:14px;">
+            <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:rgba(249,245,241,.8);line-height:1.1;">pensée</div>
+            <div style="height:1px;background:rgba(255,255,255,.15);margin:10px 0;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(249,245,241,.18);margin-bottom:5px;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(249,245,241,.12);width:70%;margin:0 auto;"></div>
+          </div>
+          <div class="lc-brand"><div class="lc-dot"></div><div class="lc-dot2"></div></div>
+        </div>
+        <div class="layout-name">Centred / editorial</div>
+      </div>
+      <div>
+        <div class="layout-card light" style="display:flex;flex-direction:column;padding:14px 14px 22px;">
+          <div style="height:5px;border-radius:3px;background:rgba(184,98,42,.5);width:50%;margin-bottom:8px;"></div>
+          <div style="height:7px;border-radius:3px;background:rgba(61,43,31,.45);margin-bottom:4px;"></div>
+          <div style="height:7px;border-radius:3px;background:rgba(61,43,31,.3);width:70%;margin-bottom:10px;"></div>
+          <div style="flex:1;display:flex;gap:6px;">
+            <div style="flex:1;background:#fff;border:1px solid var(--border-lt);border-radius:6px;"></div>
+            <div style="flex:1;background:#fff;border:1px solid var(--border-lt);border-radius:6px;"></div>
+          </div>
+          <div class="lc-brand light-b" style="position:static;margin-top:8px;padding:0;"><div class="lc-dot light-d"></div><div class="lc-dot2 light-d2"></div></div>
+        </div>
+        <div class="layout-name">Split columns</div>
+      </div>
+      <div>
+        <div class="layout-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px;">
+          <div style="height:6px;border-radius:3px;background:rgba(249,245,241,.15);width:40%;"></div>
+          <div style="height:8px;border-radius:3px;background:rgba(249,245,241,.3);width:60%;"></div>
+          <div style="height:10px;border-radius:3px;background:rgba(249,245,241,.5);width:75%;"></div>
+          <div style="height:13px;border-radius:3px;background:rgba(249,245,241,.75);width:88%;"></div>
+          <div style="height:16px;border-radius:3px;background:rgba(249,245,241,.95);width:95%;"></div>
+          <div style="width:24px;height:2px;background:var(--rust);margin-top:6px;"></div>
+          <div style="height:5px;border-radius:3px;background:rgba(249,245,241,.3);width:70%;"></div>
+          <div class="lc-brand" style="position:absolute;bottom:0;"><div class="lc-dot"></div><div class="lc-dot2"></div></div>
+        </div>
+        <div class="layout-name">Typographic cascade</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 06 COMPONENTS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">06</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Patterns</div>
+        <div class="section-title">Components</div>
+      </div>
+    </div>
+
+    <p class="prose">The following components appear across multiple posts. Copy their exact CSS when reusing them -- do not restyle from scratch.</p>
+
+    <div class="component-grid">
+
+      <div class="comp-tile" style="background:var(--darker);">
+        <div class="comp-tile-label">Eyebrow + Heading (dark)</div>
+        <div class="eyebrow-demo">Feature spotlight</div>
+        <div class="heading-dark">Write like <em>you mean it.</em></div>
+      </div>
+
+      <div class="comp-tile" style="background:var(--paper);">
+        <div class="comp-tile-label" style="color:var(--ink-muted);">Eyebrow + Heading (light)</div>
+        <div class="eyebrow-demo">Daily practice</div>
+        <div class="heading-light">Ten minutes a <em>day.</em></div>
+      </div>
+
+      <div class="comp-tile" style="background:var(--darker);">
+        <div class="comp-tile-label">Rust divider rule</div>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;color:#f9f5f1;margin-bottom:0;">First statement here.</div>
+        <div class="rust-rule"></div>
+        <div class="heading-dark" style="font-size:18px;margin-top:0;">Second statement.</div>
+      </div>
+
+      <div class="comp-tile" style="background:var(--darker);">
+        <div class="comp-tile-label">Chips -- dark post</div>
+        <div class="chip-demo">
+          <span class="chip-d used">metaphor</span>
+          <span class="chip-d">chiasmus</span>
+          <span class="chip-d">anaphora</span>
+          <span class="chip-d active">pathos</span>
+        </div>
+      </div>
+
+      <div class="comp-tile" style="background:#fff;border:1px solid var(--border-lt);">
+        <div class="comp-tile-label" style="color:var(--ink-muted);">Chips -- white card</div>
+        <div class="chip-demo" style="margin-top:4px;">
+          <span class="chip-l">assonance</span>
+          <span class="chip-l">volta</span>
+          <span class="chip-l">soliloquy</span>
+        </div>
+      </div>
+
+      <div class="comp-tile" style="background:var(--paper);">
+        <div class="comp-tile-label" style="color:var(--ink-muted);">Stat card (white on paper)</div>
+        <div class="card-demo">
+          <div class="cd-label">Total words written</div>
+          <div class="cd-value">1,872</div>
+          <div class="cd-sub">across 7 sessions</div>
+        </div>
+      </div>
+
+      <div class="comp-tile" style="background:var(--darker);">
+        <div class="comp-tile-label">Brand strip -- dark</div>
+        <div class="brand-strip-demo bsd">
+          <span class="bn">Pensee</span>
+          <span class="bu">pensee.app</span>
+        </div>
+      </div>
+
+      <div class="comp-tile" style="background:var(--paper);">
+        <div class="comp-tile-label" style="color:var(--ink-muted);">Brand strip -- light</div>
+        <div class="brand-strip-demo bsl">
+          <span class="bn">Pensee</span>
+          <span class="bu">pensee.app</span>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="prose"><strong>White cards.</strong> Cards that appear inside light posts are always <code>background: #fff</code>, <code>border: 1.5px solid var(--border)</code>, <code>border-radius: 14-16px</code>, with a shadow of <code>0 8-10px 28-32px rgba(61,43,31,.08-.1)</code>. They use <code>--chip-bg</code> for any inner section fills.</p>
+
+    <p class="prose"><strong>Row separators.</strong> Use a single 1px rule between items, never a heavier line. On dark: <code>rgba(255,255,255,.10)</code>. On light: <code>var(--border-lt)</code>. The last item never has a bottom rule.</p>
+
+    <p class="prose"><strong>Brand strip.</strong> Always <code>position: absolute; bottom: 0; left: 0; right: 0; padding: 13px 44px</code>. Left side: "Pensee" in Playfair 15px. Right side: "pensee.app" in Inter 10px with <code>letter-spacing: .05em</code>. Copy the exact markup below:</p>
+
+    <div class="code-block">
+      <div class="code-label">Brand strip HTML</div>
+      <code>
+<span class="cm">&lt;!-- Dark post --&gt;</span>
+&lt;<span class="ck">div</span> class=<span class="cs">"brand-strip bs-dark"</span>&gt;
+  &lt;<span class="ck">span</span> class=<span class="cs">"bname"</span>&gt;Pensee&lt;/<span class="ck">span</span>&gt;
+  &lt;<span class="ck">span</span> class=<span class="cs">"burl"</span>&gt;pensee.app&lt;/<span class="ck">span</span>&gt;
+&lt;/<span class="ck">div</span>&gt;
+
+<span class="cm">&lt;!-- Light post --&gt;</span>
+&lt;<span class="ck">div</span> class=<span class="cs">"brand-strip bs-light"</span>&gt; ... &lt;/<span class="ck">div</span>&gt;
+      </code>
+    </div>
+  </div>
+
+
+  <!-- 07 SPACING -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">07</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Foundation</div>
+        <div class="section-title">Spacing System</div>
+      </div>
+    </div>
+
+    <p class="prose">Spacing follows a consistent set of values. These are not arbitrary -- they create the vertical rhythm that makes posts feel considered rather than thrown together.</p>
+
+    <div class="spacing-row">
+      <div class="spacing-block"><div class="spacing-bar" style="height:6px;"></div><div class="spacing-val">6px</div><div class="spacing-label">micro gap</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:8px;"></div><div class="spacing-val">8px</div><div class="spacing-label">chip gap</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:12px;"></div><div class="spacing-val">12px</div><div class="spacing-label">eyebrow</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:14px;"></div><div class="spacing-val">14px</div><div class="spacing-label">row pad</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:18px;"></div><div class="spacing-val">18-20px</div><div class="spacing-label">heading mb</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:22px;"></div><div class="spacing-val">22-24px</div><div class="spacing-label">section gap</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:28px;"></div><div class="spacing-val">28px</div><div class="spacing-label">eyebrow-xl</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:40px;"></div><div class="spacing-val">40-44px</div><div class="spacing-label">body pad</div></div>
+      <div class="spacing-block"><div class="spacing-bar" style="height:76px;"></div><div class="spacing-val">76px</div><div class="spacing-label">bottom pad</div></div>
+    </div>
+
+    <table class="rules-table">
+      <tr><th>Context</th><th>Value</th></tr>
+      <tr><td>Body padding (top/left/right)</td><td><code>40-44px</code></td></tr>
+      <tr><td>Body padding (bottom)</td><td><code>76px</code> -- always, to clear brand strip</td></tr>
+      <tr><td>Eyebrow to headline</td><td><code>12-14px</code> (margin-bottom on eyebrow)</td></tr>
+      <tr><td>Eyebrow to headline (editorial / centered)</td><td><code>28-32px</code></td></tr>
+      <tr><td>Headline to first content element</td><td><code>18-22px</code></td></tr>
+      <tr><td>Row padding (top/bottom on list items)</td><td><code>13-14px</code></td></tr>
+      <tr><td>Gap between chips</td><td><code>6-9px</code></td></tr>
+      <tr><td>Card internal padding</td><td><code>18-20px</code></td></tr>
+      <tr><td>Rust rule margin (top + bottom)</td><td><code>20-28px</code></td></tr>
+    </table>
+  </div>
+
+
+  <!-- 08 ICONS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">08</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Assets</div>
+        <div class="section-title">Icons</div>
+      </div>
+    </div>
+
+    <p class="prose">All icons come from <strong>Lucide</strong>, loaded via CDN. Never use emoji as icons. Never use other icon libraries. Icon sizes follow a consistent scale: <code>10px</code> inside annotation badges, <code>16px</code> in row icons, <code>20-24px</code> for standalone feature icons.</p>
+
+    <div class="code-block">
+      <div class="code-label">CDN import -- add to &lt;head&gt;</div>
+      <code>&lt;<span class="ck">script</span> src=<span class="cs">"https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"</span>&gt;&lt;/<span class="ck">script</span>&gt;</code>
+    </div>
+
+    <div class="code-block">
+      <div class="code-label">Initialise after DOM ready</div>
+      <code>
+document.<span class="ck">addEventListener</span>(<span class="cs">'DOMContentLoaded'</span>, () => {
+  <span class="ck">if</span> (window.lucide) lucide.<span class="ck">createIcons</span>();
+});
+      </code>
+    </div>
+
+    <div class="code-block">
+      <div class="code-label">Usage in HTML</div>
+      <code>
+<span class="cm">&lt;!-- Size via style, colour via CSS color property --&gt;</span>
+&lt;<span class="ck">i</span> data-lucide=<span class="cs">"pen-line"</span> style=<span class="cs">"width:16px;height:16px;"</span>&gt;&lt;/<span class="ck">i</span>&gt;
+&lt;<span class="ck">i</span> data-lucide=<span class="cs">"underline"</span> style=<span class="cs">"width:10px;height:10px;"</span>&gt;&lt;/<span class="ck">i</span>&gt;
+      </code>
+    </div>
+
+    <p class="prose"><strong>Icons used so far across all posts:</strong></p>
+    <div class="icon-grid" id="icon-grid">
+      <div class="icon-tile"><i data-lucide="pen-line" style="width:20px;height:20px;"></i><span>pen-line</span></div>
+      <div class="icon-tile"><i data-lucide="mail" style="width:20px;height:20px;"></i><span>mail</span></div>
+      <div class="icon-tile"><i data-lucide="twitter" style="width:20px;height:20px;"></i><span>twitter</span></div>
+      <div class="icon-tile"><i data-lucide="underline" style="width:20px;height:20px;"></i><span>underline</span></div>
+      <div class="icon-tile"><i data-lucide="highlighter" style="width:20px;height:20px;"></i><span>highlighter</span></div>
+      <div class="icon-tile"><i data-lucide="pencil" style="width:20px;height:20px;"></i><span>pencil</span></div>
+      <div class="icon-tile"><i data-lucide="camera" style="width:20px;height:20px;"></i><span>camera</span></div>
+      <div class="icon-tile"><i data-lucide="clock" style="width:20px;height:20px;"></i><span>clock</span></div>
+      <div class="icon-tile"><i data-lucide="bar-chart-2" style="width:20px;height:20px;"></i><span>bar-chart-2</span></div>
+      <div class="icon-tile"><i data-lucide="search" style="width:20px;height:20px;"></i><span>search</span></div>
+    </div>
+
+    <p class="prose"><strong>Colour convention.</strong> In row icon containers on dark posts: the "bad" icon uses <code>color: rgba(249,245,241,.5)</code>; the "good" icon uses <code>color: var(--rust)</code>. In annotation badges (small rust circles), the icon is always <code>color: #fff</code>.</p>
+  </div>
+
+
+  <!-- 09 COPY RULES -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">09</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Voice + Tone</div>
+        <div class="section-title">Copy Rules</div>
+      </div>
+    </div>
+
+    <p class="prose">The copy tone is literary, honest, and direct. It respects the reader's intelligence. It does not oversell. It avoids the inflated enthusiasm of typical app marketing.</p>
+
+    <table class="rules-table">
+      <tr><th>Rule</th><th>Detail</th></tr>
+      <tr>
+        <td><span class="tag-dont">Never</span> Em dashes</td>
+        <td>Use a full stop, a comma, or rewrite the sentence. Em dashes create visual noise and feel informal. Use a plain hyphen only in compound modifiers.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-dont">Never</span> Emoji</td>
+        <td>Do not use emoji in post content. They are visual orphans in a literary aesthetic. Captions (Instagram text, not the image) may use them sparingly if the brief requires it.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-do">Do</span> Lucide icons</td>
+        <td>When a visual indicator is needed (cameras, clocks, pen, chart), use a Lucide SVG icon at the correct size. Never a Unicode character as a substitute.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-do">Do</span> Present tense</td>
+        <td>Write in present tense. "Pensee gives you..." not "Pensee will give you..."</td>
+      </tr>
+      <tr>
+        <td><span class="tag-do">Do</span> Second person</td>
+        <td>Address the reader directly: "You write for you." "Your voice matters." Avoid the third-person product voice.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-dont">Never</span> Exclamation marks</td>
+        <td>The tone is quiet confidence. Exclamation marks undermine it. Let the idea carry the energy.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-dont">Never</span> Ellipsis (...) for trailing off</td>
+        <td>End sentences firmly. An ellipsis suggests uncertainty. The copy does not trail off.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-do">Do</span> Short sentences</td>
+        <td>Eyebrow lines: 2-4 words. Headlines: 5-12 words across 1-2 lines. Sub-text: max 2 sentences, each under 20 words.</td>
+      </tr>
+      <tr>
+        <td><span class="tag-do">Do</span> Period after headline</td>
+        <td>Headlines consistently end with a full stop. "Be the one that remembers." not "Be the one that remembers"</td>
+      </tr>
+      <tr>
+        <td><span class="tag-do">Do</span> Italicise the key word</td>
+        <td>In Playfair headlines, the word carrying the most meaning takes the italic + rust treatment. One word per headline, not a phrase.</td>
+      </tr>
+    </table>
+
+    <p class="prose"><strong>Eyebrow formulas.</strong> Eyebrows orient the reader to the post's category. Use these established patterns:</p>
+    <div class="code-block">
+      <div class="code-label">Eyebrow examples by category</div>
+      <code>
+<span class="cm">Feature spotlight    -- "Feature spotlight"</span>
+<span class="cm">Writing concept      -- "A thought worth sitting with"</span>
+<span class="cm">Data / stats         -- "Your writing over time"</span>
+<span class="cm">Prompt / quote       -- "Today's prompt"</span>
+<span class="cm">How-to               -- "The honest breakdown"</span>
+<span class="cm">Etymology            -- leave blank or use language of origin</span>
+<span class="cm">Milestone            -- "End of week review" / "Build the habit"</span>
+      </code>
+    </div>
+  </div>
+
+
+  <!-- 10 CODE BOILERPLATE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">10</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Implementation</div>
+        <div class="section-title">Code Boilerplate</div>
+      </div>
+    </div>
+
+    <p class="prose">Use this shell as the starting point for every new post file. It includes the complete CSS variable set, shared atom classes (noise, brand strip), the html-to-image renderer, and the double-pass render function that ensures web fonts load correctly before export.</p>
+
+    <div class="code-block">
+      <div class="code-label">Full page boilerplate</div>
+      <code>
+&lt;!DOCTYPE html&gt;
+&lt;<span class="ck">html</span> lang=<span class="cs">"en"</span>&gt;
+&lt;<span class="ck">head</span>&gt;
+  &lt;<span class="ck">meta</span> charset=<span class="cs">"UTF-8"</span>&gt;
+  &lt;<span class="ck">link</span> href=<span class="cs">"https://fonts.googleapis.com/css2?family=Playfair+Display:
+    ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:
+    wght@300;400;500;600&display=swap"</span> rel=<span class="cs">"stylesheet"</span>&gt;
+  &lt;<span class="ck">script</span> src=<span class="cs">"https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"</span>&gt;&lt;/<span class="ck">script</span>&gt;
+  &lt;<span class="ck">style</span>&gt;
+    <span class="ck">:root</span> {
+      <span class="ck">--paper</span>:     <span class="cv">#faf8f7</span>;
+      <span class="ck">--ink</span>:       <span class="cv">#3d2b1f</span>;
+      <span class="ck">--ink-mid</span>:   <span class="cv">#7a6055</span>;
+      <span class="ck">--ink-muted</span>: <span class="cv">#a89688</span>;
+      <span class="ck">--rust</span>:      <span class="cv">#b8622a</span>;
+      <span class="ck">--rust-dark</span>: <span class="cv">#8f4a1c</span>;
+      <span class="ck">--border</span>:    <span class="cv">#d0c0af</span>;
+      <span class="ck">--border-lt</span>: <span class="cv">#e4d8c8</span>;
+      <span class="ck">--chip-bg</span>:   <span class="cv">#ece2d8</span>;
+      <span class="ck">--chip-text</span>: <span class="cv">#5c3d2e</span>;
+      <span class="ck">--darker</span>:    <span class="cv">#1c110a</span>;
+    }
+    .post { <span class="ck">width</span>:<span class="cv">480px</span>; <span class="ck">height</span>:<span class="cv">600px</span>; <span class="ck">position</span>:<span class="cv">relative</span>; <span class="ck">overflow</span>:<span class="cv">hidden</span>; }
+    .body { <span class="ck">position</span>:<span class="cv">relative</span>; <span class="ck">z-index</span>:<span class="cv">1</span>; <span class="ck">padding</span>:<span class="cv">44px 44px 76px</span>; <span class="ck">height</span>:<span class="cv">100%</span>; <span class="ck">display</span>:<span class="cv">flex</span>; <span class="ck">flex-direction</span>:<span class="cv">column</span>; }
+    .eyebrow { <span class="ck">font-size</span>:<span class="cv">10px</span>; <span class="ck">letter-spacing</span>:<span class="cv">.3em</span>; <span class="ck">text-transform</span>:<span class="cv">uppercase</span>; <span class="ck">color</span>:<span class="cv">var(--rust)</span>; <span class="ck">margin-bottom</span>:<span class="cv">12px</span>; }
+    .noise { <span class="ck">position</span>:<span class="cv">absolute</span>; <span class="ck">inset</span>:<span class="cv">0</span>; <span class="ck">pointer-events</span>:<span class="cv">none</span>; <span class="ck">z-index</span>:<span class="cv">10</span>; <span class="ck">opacity</span>:<span class="cv">.035</span>;
+      <span class="ck">background-image</span>:<span class="cv">url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")</span>; }
+    .brand-strip { <span class="ck">position</span>:<span class="cv">absolute</span>; <span class="ck">bottom</span>:<span class="cv">0</span>; <span class="ck">left</span>:<span class="cv">0</span>; <span class="ck">right</span>:<span class="cv">0</span>; <span class="ck">padding</span>:<span class="cv">13px 44px</span>; <span class="ck">display</span>:<span class="cv">flex</span>; <span class="ck">justify-content</span>:<span class="cv">space-between</span>; <span class="ck">align-items</span>:<span class="cv">center</span>; <span class="ck">z-index</span>:<span class="cv">2</span>; }
+    .brand-strip .bname { <span class="ck">font-family</span>:<span class="cv">'Playfair Display',serif</span>; <span class="ck">font-size</span>:<span class="cv">15px</span>; <span class="ck">letter-spacing</span>:<span class="cv">.06em</span>; }
+    .brand-strip .burl  { <span class="ck">font-size</span>:<span class="cv">10px</span>; <span class="ck">letter-spacing</span>:<span class="cv">.05em</span>; }
+    .bs-dark { <span class="ck">border-top</span>:<span class="cv">1px solid rgba(255,255,255,.12)</span>; }
+    .bs-dark .bname { <span class="ck">color</span>:<span class="cv">rgba(249,245,241,.55)</span>; }
+    .bs-dark .burl  { <span class="ck">color</span>:<span class="cv">rgba(249,245,241,.35)</span>; }
+    .bs-light { <span class="ck">border-top</span>:<span class="cv">1px solid var(--border-lt)</span>; }
+    .bs-light .bname { <span class="ck">color</span>:<span class="cv">var(--ink-muted)</span>; }
+    .bs-light .burl  { <span class="ck">color</span>:<span class="cv">var(--border)</span>; }
+
+    <span class="cm">/* === ADD YOUR POST-SPECIFIC CSS BELOW === */</span>
+  &lt;/<span class="ck">style</span>&gt;
+&lt;/<span class="ck">head</span>&gt;
+&lt;<span class="ck">body</span>&gt;
+
+&lt;<span class="ck">div</span> class=<span class="cs">"post"</span> id=<span class="cs">"p1"</span>&gt;
+  &lt;<span class="ck">div</span> class=<span class="cs">"noise"</span>&gt;&lt;/<span class="ck">div</span>&gt;
+  &lt;<span class="cm">!-- blobs go here --&gt;</span>
+  &lt;<span class="ck">div</span> class=<span class="cs">"body"</span>&gt;
+    &lt;<span class="ck">p</span> class=<span class="cs">"eyebrow"</span>&gt;Category label&lt;/<span class="ck">p</span>&gt;
+    &lt;<span class="cm">!-- content --&gt;</span>
+  &lt;/<span class="ck">div</span>&gt;
+  &lt;<span class="ck">div</span> class=<span class="cs">"brand-strip bs-dark"</span>&gt;
+    &lt;<span class="ck">span</span> class=<span class="cs">"bname"</span>&gt;Pensee&lt;/<span class="ck">span</span>&gt;
+    &lt;<span class="ck">span</span> class=<span class="cs">"burl"</span>&gt;pensee.app&lt;/<span class="ck">span</span>&gt;
+  &lt;/<span class="ck">div</span>&gt;
+&lt;/<span class="ck">div</span>&gt;
+
+&lt;<span class="ck">button</span> onclick=<span class="cs">"snap('p1','filename.png')"</span>&gt;Download&lt;/<span class="ck">button</span>&gt;
+
+&lt;<span class="ck">script</span> src=<span class="cs">"https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"</span>&gt;&lt;/<span class="ck">script</span>&gt;
+&lt;<span class="ck">script</span>&gt;
+  document.addEventListener(<span class="cs">'DOMContentLoaded'</span>, () => {
+    if (window.lucide) lucide.createIcons();
+  });
+
+  async function snap(id, filename) {
+    const el  = document.getElementById(id);
+    const btn = el.closest('.post-wrapper').querySelector('.dl-btn');
+    btn.textContent = <span class="cs">'Rendering...'</span>; btn.disabled = <span class="cv">true</span>;
+    try {
+      <span class="cm">// Double-pass: ensures web fonts are loaded before capture</span>
+      await htmlToImage.toPng(el, { <span class="ck">pixelRatio</span>: <span class="cv">2</span> });
+      const dataUrl = await htmlToImage.toPng(el, { <span class="ck">pixelRatio</span>: <span class="cv">2</span> });
+      const a = document.createElement(<span class="cs">'a'</span>);
+      a.href = dataUrl; a.download = filename; a.click();
+      btn.textContent = <span class="cs">'Downloaded!'</span>;
+      setTimeout(() => { btn.textContent = <span class="cs">'Download'</span>; btn.disabled = <span class="cv">false</span>; }, <span class="cv">2200</span>);
+    } catch (err) {
+      alert(<span class="cs">'Render failed: '</span> + err.message);
+      btn.textContent = <span class="cs">'Download'</span>; btn.disabled = <span class="cv">false</span>;
+    }
+  }
+&lt;/<span class="ck">script</span>&gt;
+&lt;/<span class="ck">body</span>&gt;
+&lt;/<span class="ck">html</span>&gt;
+      </code>
+    </div>
+
+    <p class="prose"><strong>Why double-pass rendering.</strong> <code>html-to-image</code> clones the DOM and renders it to a canvas. On the first pass, Google Fonts may not yet have transferred into the clone. The second pass captures the fully-loaded font state. Always use this pattern -- a single pass will occasionally produce posts with fallback system fonts.</p>
+
+    <p class="prose"><strong>Export spec.</strong> <code>pixelRatio: 2</code> produces a 960 x 1200 px PNG from the 480 x 600 display frame. Instagram recommends a minimum of 1080 x 1350 px for 4:5 posts -- if this becomes a concern, increase <code>pixelRatio</code> to <code>3</code> to export at 1440 x 1800 px, which exceeds the recommendation with headroom to spare.</p>
+  </div>
+
+
+
+  <!-- 11 CONTENT QUALITY -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">11</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Strategy</div>
+        <div class="section-title">What Makes a Good Post: Content</div>
+      </div>
+    </div>
+
+    <p class="prose">A good Pensee post teaches, provokes, or reveals something true -- then connects that back to the app without overselling. The content never feels like advertising. It feels like something worth reading on its own, and only then does the reader notice it is from a brand.</p>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>Post content categories.</strong> Every post belongs to one of six types. A healthy content calendar rotates across all six. No more than two posts of the same type should run back to back.</p>
+
+    <div class="post-types">
+      <div class="pt-row">
+        <div class="pt-card">
+          <div class="pt-header">
+            <span class="pt-name">Anti-AI / Anti-outsourcing</span>
+            <span class="pt-badge dark">Dark</span>
+          </div>
+          <div class="pt-examples">Examples: <em>P1, P2, P9, P11, P13, P18</em></div>
+          <div class="pt-rule">The app's core argument. AI is eroding writing ability and voice. These posts name the problem clearly, often with a contrast (AI vs. you) or a stark statement. They should feel like something a smart person said, not like an ad. The tone is firm, not alarmist.</div>
+        </div>
+        <div class="pt-card">
+          <div class="pt-header">
+            <span class="pt-name">Feature spotlight</span>
+            <span class="pt-badge light">Light</span>
+          </div>
+          <div class="pt-examples">Examples: <em>P3, P7, P10, P14, P19, P25</em></div>
+          <div class="pt-rule">Shows a specific app feature through a realistic mockup or UI representation. The mockup must look real: real vocabulary words, real timestamps, real session data, real literary quotes. Generic placeholder text destroys credibility. Always name the feature clearly in the eyebrow or heading.</div>
+        </div>
+      </div>
+      <div class="pt-row">
+        <div class="pt-card">
+          <div class="pt-header">
+            <span class="pt-name">Literary quote / Prompt showcase</span>
+            <span class="pt-badge both">Both</span>
+          </div>
+          <div class="pt-examples">Examples: <em>P8, P17, P20</em></div>
+          <div class="pt-rule">A single great quote from a literary source, given space to breathe. The frame connects it to the app: this is the kind of prompt Pensee gives you, or this is why writing matters. The quote must be genuinely good. Do not use motivational aphorisms or business quotes. Aurelius, Plath, Didion, Atwood, Morrison.</div>
+        </div>
+        <div class="pt-card">
+          <div class="pt-header">
+            <span class="pt-name">Vocabulary and technique education</span>
+            <span class="pt-badge both">Both</span>
+          </div>
+          <div class="pt-examples">Examples: <em>P4, P6, P15, P24</em></div>
+          <div class="pt-rule">Teaches the audience something about language: a rhetorical device, a vocabulary word, an etymology, an annotation technique. These posts attract the audience that is genuinely curious about writing craft. They should not feel like textbook definitions -- use literary examples, real sentences, human explanations.</div>
+        </div>
+      </div>
+      <div class="pt-row">
+        <div class="pt-card">
+          <div class="pt-header">
+            <span class="pt-name">Habit and streak</span>
+            <span class="pt-badge light">Light</span>
+          </div>
+          <div class="pt-examples">Examples: <em>P5, P12, P16, P21, P22, P23</em></div>
+          <div class="pt-rule">Speaks to consistency, repetition, and the compound effect of daily practice. Uses real-looking stats, milestones, or writer trivia to make the case that showing up daily is the whole game. The stat numbers must be plausible and specific -- "267 words average" feels real; "250+ words" feels invented.</div>
+        </div>
+        <div class="pt-card">
+          <div class="pt-header">
+            <span class="pt-name">Brand and philosophy</span>
+            <span class="pt-badge dark">Dark</span>
+          </div>
+          <div class="pt-examples">Examples: <em>P6, P13, P23</em></div>
+          <div class="pt-rule">The most editorial post type. A statement, a cascade, a big idea given typographic space. No feature demo, no data, no mockup. Just the argument. These work best when the writing is strong enough to stand on its own. Rarely use this type -- it has the most impact when it is not overused.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>Content checklist.</strong> Before finalising any post, verify the following:</p>
+
+    <div class="checklist">
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="check" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">One clear idea per post</div>
+          <div class="cl-desc">A good post makes exactly one argument or demonstrates exactly one thing. If you can summarise the post in one sentence, it is focused enough. If you need two sentences, it is trying to do too much.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="check" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">The copy could stand without the brand</div>
+          <div class="cl-desc">Cover the brand strip and ask: is this interesting on its own? A post that is only interesting because it advertises the app is a weak post. The best posts are things a thoughtful person would save or share regardless of the brand.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="check" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">The mockup data is specific and real-looking</div>
+          <div class="cl-desc">Any feature demo must use real vocabulary words (ephemeral, liminal, equanimity), real literary quotes with correct attribution, real-looking word counts (291 not 300), and real timestamps (07:24, not 10:00). Vague placeholder data signals that nobody tested the concept.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="check" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">The headline earns its key word</div>
+          <div class="cl-desc">The italicised rust word in the headline is the most important word in the post. It should be the one word that, if removed, collapses the meaning. "Be the one that <em>remembers.</em>" The italic lands because the whole post builds to it.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="check" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">The app connection is earned, not forced</div>
+          <div class="cl-desc">The bridge to Pensee comes after the idea has been established, not before. Do not open with the app. Open with the insight, the quote, the device, the data. Let the reader nod. Then show them that Pensee is the answer to the problem you just described.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon fail"><i data-lucide="x" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Generic writing advice without a hook</div>
+          <div class="cl-desc">"Write every day." "Your voice matters." "Ten minutes is all it takes." These are fine as supporting lines but they are not post ideas. Every post needs a specific angle: a named writer, a specific device, a provocative contrast, a real data point. Generality is invisible on a feed.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon fail"><i data-lucide="x" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">More than one feature per post</div>
+          <div class="cl-desc">Feature spotlight posts show one feature. Trying to mention the timer, the dictionary, and the OCR scanner in the same post produces a confused layout and a weak argument. Each feature deserves its own post.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon fail"><i data-lucide="x" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Motivational quotes from business or self-help</div>
+          <div class="cl-desc">The quote library is strictly literary. Marcus Aurelius, Toni Morrison, Joan Didion, Sylvia Plath, Haruki Murakami, Margaret Atwood. Not Gary Vaynerchuk, not Simon Sinek, not anonymous. The literary credibility of the quotes is core to the brand.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon fail"><i data-lucide="x" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Repeating the same post type back to back</div>
+          <div class="cl-desc">Two dark editorial posts in a row dilutes both. Two feature spotlights in a row feels like a product demo reel. The feed should alternate mode (dark/light) and rotate type across the six categories.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>Post anatomy.</strong> Most posts follow a consistent three-zone structure regardless of their content type.</p>
+
+    <div class="anatomy-wrap">
+      <div class="anatomy-post">
+        <div class="ab" style="width:120px;height:120px;background:#fadac1;filter:blur(40px);opacity:.1;top:-30px;right:-30px;"></div>
+        <div class="ab" style="width:80px;height:80px;background:#b8622a;filter:blur(30px);opacity:.12;bottom:-20px;left:-20px;"></div>
+
+        <!-- Zone 1: Eyebrow + Heading -->
+        <div class="anat-zone" style="top:14px;left:12px;right:22px;height:52px;">
+          <div style="padding:6px 8px;width:100%;">
+            <div style="height:3px;background:rgba(184,98,42,.5);border-radius:2px;width:55%;margin-bottom:5px;"></div>
+            <div style="height:5px;background:rgba(249,245,241,.45);border-radius:2px;width:80%;margin-bottom:3px;"></div>
+            <div style="height:5px;background:rgba(249,245,241,.3);border-radius:2px;width:55%;"></div>
+          </div>
+          <div class="anat-num">1</div>
+        </div>
+
+        <!-- Zone 2: Main content -->
+        <div class="anat-zone" style="top:76px;left:12px;right:22px;bottom:38px;">
+          <div style="padding:6px 8px;width:100%;display:flex;flex-direction:column;gap:5px;">
+            <div style="height:4px;background:rgba(255,255,255,.12);border-radius:2px;"></div>
+            <div style="height:4px;background:rgba(255,255,255,.1);border-radius:2px;width:85%;"></div>
+            <div style="height:4px;background:rgba(255,255,255,.1);border-radius:2px;width:90%;"></div>
+            <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;width:70%;"></div>
+          </div>
+          <div class="anat-num">2</div>
+        </div>
+
+        <!-- Zone 3: Brand strip -->
+        <div class="anat-zone" style="bottom:0;left:0;right:0;height:28px;border-radius:0;border-left:none;border-right:none;border-bottom:none;">
+          <div class="anat-num" style="right:-8px;top:50%;">3</div>
+        </div>
+      </div>
+
+      <div class="anatomy-legend">
+        <div class="al-item">
+          <div class="al-num">1</div>
+          <div class="al-text">
+            <div class="al-title">Eyebrow + Headline zone</div>
+            <div class="al-desc">The eyebrow (10px caps, rust) orients the reader to the post category. The headline (Playfair, 26-34px) carries the single key idea. This zone is never taller than about one quarter of the post. It should be read in under three seconds.</div>
+          </div>
+        </div>
+        <div class="al-item">
+          <div class="al-num">2</div>
+          <div class="al-text">
+            <div class="al-title">Main content zone</div>
+            <div class="al-desc">The bulk of the visual real estate. Either a single piece of information given maximum space (a quote, a typographic statement), or a structured element (list, card, chart, timeline, comparison). Never crowded. If content cannot fit without going below 11px, cut it.</div>
+          </div>
+        </div>
+        <div class="al-item">
+          <div class="al-num">3</div>
+          <div class="al-text">
+            <div class="al-title">Brand strip</div>
+            <div class="al-desc">Always the same. "Pensee" left, "pensee.app" right. Never modified. 76px of bottom padding in the body ensures the content does not creep into this zone.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 12 VISUAL QUALITY -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">12</div>
+      <div class="section-title-block">
+        <div class="section-eyebrow">Quality Control</div>
+        <div class="section-title">What Makes a Good Post: Visuals</div>
+      </div>
+    </div>
+
+    <p class="prose">A technically correct post uses the right colours, fonts, and spacing. A visually good post goes further: it has spatial balance, textural warmth, a clear focal point, and enough negative space that the composition breathes. These qualities are harder to specify but easy to see.</p>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>The four visual qualities of a strong post.</strong></p>
+
+    <div class="vq-grid">
+      <div class="vq-card">
+        <div class="vq-header vq-pass"><span class="vq-label">Spatial balance</span></div>
+        <div class="vq-body"><p><strong>The post is not top-heavy or bottom-heavy.</strong> The headline zone and content zone occupy their proportional thirds. If the headline runs four lines, the content zone needs to shrink. If there is a single big typographic statement, it should be centred or weighted slightly above centre, not drifting to a corner.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-pass"><span class="vq-label">Textural warmth</span></div>
+        <div class="vq-body"><p><strong>The post looks physically made, not digitally generated.</strong> This comes from three things working together: the noise overlay breaking up flat areas, the blob gradients adding ambient light and warmth, and the Playfair Display giving the type a printed quality. If any one of these is missing, the post looks sterile.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-pass"><span class="vq-label">Clear focal point</span></div>
+        <div class="vq-body"><p><strong>There is one thing the eye lands on first.</strong> On dark posts this is usually the main headline. On feature posts it is the card or UI element. On typographic posts it is the largest or brightest text. If two elements compete for primary attention, one of them needs to recede: reduce its size, lower its opacity, or remove it.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-pass"><span class="vq-label">Negative space</span></div>
+        <div class="vq-body"><p><strong>The post is not full.</strong> The padding system (40-44px on sides, 76px bottom) exists precisely to keep the content away from the edges. Within the content zone, avoid filling every pixel. A list with four items and breathing room between rows is better than six items crammed together. White space signals confidence.</p></div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>Common visual failure modes.</strong></p>
+
+    <div class="vq-grid">
+      <div class="vq-card">
+        <div class="vq-header vq-fail"><span class="vq-label">Too many font sizes</span></div>
+        <div class="vq-body"><p>Using five different sizes in one post fragments the hierarchy. Each post should have at most three size steps: the headline, the supporting text, and the micro labels. Everything else should collapse into one of these three levels.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-fail"><span class="vq-label">Grey text on dark background</span></div>
+        <div class="vq-body"><p>Any rgba opacity below 0.55 on dark posts is illegible on a phone screen in daylight. The background is near-black; anything that is not warm white at reasonable opacity disappears. Always check against the opacity ladder in Section 01.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-fail"><span class="vq-label">Blobs that do not bleed off the edge</span></div>
+        <div class="vq-body"><p>A blob that is fully contained within the frame looks like a spotlight, not an ambient glow. Every blob must be positioned so that at minimum one of its edges is cut off by the post boundary. This is what creates the sense of warmth coming from beyond the frame.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-fail"><span class="vq-label">Cards that are too small to read</span></div>
+        <div class="vq-body"><p>Feature mockup cards need enough vertical space to render their content at readable font sizes. The minimum text size inside a card is 10px for labels, 11px for body, 12px for definitions. If a card tries to show too much, cut items until it can breathe -- never shrink the text.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-fail"><span class="vq-label">Consecutive same-mode posts</span></div>
+        <div class="vq-body"><p>Two dark posts in a row is fine occasionally. Three is a pattern. Four or more in a row makes the feed feel heavy and monotonous. The light posts are not just visual relief -- they are structurally important to the rhythm. Feature spotlights are almost always light; plan them to break up dark editorial runs.</p></div>
+      </div>
+      <div class="vq-card">
+        <div class="vq-header vq-fail"><span class="vq-label">Missing noise or missing blobs</span></div>
+        <div class="vq-body"><p>A post without the noise overlay has flat colour fields that look like a Canva template. A post without blobs looks clinical. Both elements are mandatory on every post. The noise div must have z-index 10 and pointer-events none. The blobs must be position:absolute with pointer-events none so they do not interfere with layout.</p></div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>The feed as a whole.</strong> Posts are not experienced one at a time. A visitor who arrives at the Pensee profile sees a grid. The grid should alternate dark and light. It should show variety in layout type (not all text, not all cards). It should never have two posts that look like twins -- same background mode, same layout, same approximate amount of text.</p>
+
+    <p class="prose">Before adding a new post to the batch, check it against the last two posts. It should differ in at least two of these dimensions: background mode, layout type, content category, and dominant visual element (headline vs. card vs. data vs. quote).</p>
+
+    <div class="rule"></div>
+
+    <p class="prose"><strong>Visual self-assessment.</strong> Print or screenshot the post and ask these five questions. If any answer is no, revise before exporting.</p>
+
+    <div class="checklist">
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="eye" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Can I read every word at arm's length?</div>
+          <div class="cl-desc">Hold the screen at normal reading distance. If any text requires squinting, it is too small or too low in opacity. The smallest text on the post (labels, chips, micro-copy) should still be comfortably legible.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="eye" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Does the post have a single thing I look at first?</div>
+          <div class="cl-desc">Cover everything except the element you intended to be the focal point. Does the rest of the post support and frame it? If another element keeps drawing attention, reconsider the hierarchy.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="eye" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Does it feel warm, not cold?</div>
+          <div class="cl-desc">The palette is deliberately warm. If the post looks neutral or grey, check that the blobs are in place and bleeding off the edges, that the noise overlay is present, and that no text colours have drifted into neutral grey rather than the warm off-white family.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="eye" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Does it look different from the previous two posts?</div>
+          <div class="cl-desc">Check background mode, layout type, and approximate visual density. At least two of these three should differ from the preceding posts in the batch.</div>
+        </div>
+      </div>
+      <div class="cl-item">
+        <div class="cl-icon pass"><i data-lucide="eye" style="width:12px;height:12px;"></i></div>
+        <div class="cl-body">
+          <div class="cl-title">Would someone save this even without knowing what Pensee is?</div>
+          <div class="cl-desc">The best posts are things the audience finds independently useful -- a quote, a technique, a thought, a piece of data. If the post only makes sense as an ad, it is weaker than it should be. Aim for posts that earn their own attention before earning attention for the brand.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FOOTER -->
+  <div class="sg-footer">
+    <div class="sg-footer-brand">Pensee</div>
+    <div class="sg-footer-note">Style guide for instagram post production -- pensee.app</div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) lucide.createIcons();
+  });
+</script>
+</body>
+</html>

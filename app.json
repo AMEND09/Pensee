@@ -83,6 +83,13 @@
           "savePhotosPermission": "Pensée needs permission to save your writing exports to your photo library.",
           "isAccessMediaLocationEnabled": false
         }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Pensée uses your camera so you can scan handwritten notes and add them to your writing.",
+          "enableFrameProcessors": true
+        }
       ]
     ],
     "experiments": {
