@@ -49,12 +49,9 @@ export default function OnboardingModal({ visible, terms, onComplete }: Props) {
 
           {step === 0 && (
             <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Welcome to Pensée</Text>
+              <Text style={styles.stepTitle}>Ten minutes. One prompt. Three tools.</Text>
               <Text style={styles.stepBody}>
-                Each day, you'll receive a quote prompt — a line from literature, philosophy, or life.
-              </Text>
-              <Text style={styles.stepBody}>
-                Use it as a lens for your writing, not a topic to write about literally. Let it color your thoughts, not constrain them.
+                Every day begins with someone else's words. Your job is to write past them.
               </Text>
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
                 <Text style={styles.nextBtnText}>Continue</Text>
@@ -66,7 +63,7 @@ export default function OnboardingModal({ visible, terms, onComplete }: Props) {
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Today's Techniques</Text>
               <Text style={styles.stepBody}>
-                Each session comes with three writing techniques. Tap each one to see what it means.
+                Three writing tools, waiting to be used. Tap each one — discover what it is before the clock starts.
               </Text>
               <View style={styles.termList}>
                 {terms.map((term) => {
@@ -96,7 +93,7 @@ export default function OnboardingModal({ visible, terms, onComplete }: Props) {
                 disabled={!allTermsRevealed}
               >
                 <Text style={[styles.nextBtnText, !allTermsRevealed && styles.nextBtnTextMuted]}>
-                  {allTermsRevealed ? 'Continue' : 'Tap each technique first'}
+                  {allTermsRevealed ? 'Continue' : 'Read all three first'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -106,13 +103,13 @@ export default function OnboardingModal({ visible, terms, onComplete }: Props) {
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Freewriting</Text>
               <Text style={styles.stepBody}>
-                When the timer starts, write freely for ten minutes. No editing, no backspacing, no perfection.
+                The timer runs. The page fills. Nothing gets taken back.
               </Text>
               <Text style={styles.stepBody}>
-                The goal isn't a polished piece — it's the practice of putting words down without judgment. Resistance is normal. Write through it.
+                Resistance is normal. Write through it. The only rule: keep moving.
               </Text>
               <TouchableOpacity style={styles.beginBtn} onPress={handleNext}>
-                <Text style={styles.beginBtnText}>Ready? Let's begin.</Text>
+                <Text style={styles.beginBtnText}>Let's begin.</Text>
               </TouchableOpacity>
             </View>
           )}
