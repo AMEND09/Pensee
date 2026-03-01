@@ -489,30 +489,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   naturalChip: {
-    backgroundColor: '#e8f5e1',
-    borderColor: '#c5debb',
+    backgroundColor: Colors.inputBg,
+    borderColor: Colors.border,
   },
   naturalChipActive: {
     backgroundColor: '#d4ecc9',
     borderColor: '#4a7c3f',
   },
   naturalChipText: {
-    color: '#4a7c3f',
+    color: Colors.textSecondary,
   },
   naturalChipTextActive: {
     fontFamily: Font.serifBold,
     color: '#3a6331',
   },
   forcedChip: {
-    backgroundColor: '#f0ece8',
-    borderColor: '#d8d0c8',
+    backgroundColor: Colors.inputBg,
+    borderColor: Colors.border,
   },
   forcedChipActive: {
     backgroundColor: '#e4ddd5',
     borderColor: '#7a6055',
   },
   forcedChipText: {
-    color: '#7a6055',
+    color: Colors.textSecondary,
   },
   forcedChipTextActive: {
     fontFamily: Font.serifBold,

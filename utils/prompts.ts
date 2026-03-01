@@ -148,6 +148,15 @@ const rhetoricalTerms: string[] = [
   'paradox',
   'allegory',
   'allusion',
+  // Expanded set
+  'imagery',
+  'rhetoricalQuestion',
+  'repetition',
+  'symbolism',
+  'foreshadowing',
+  'anadiplosis',
+  'zeugma',
+  'epiphora',
 ];
 
 const vocabTerms: string[] = [
@@ -169,6 +178,21 @@ const vocabTerms: string[] = [
   'soliloquy',
   'iridescent',
   'petrichor',
+  // Expanded set
+  'wistful',
+  'zenith',
+  'palpable',
+  'lucid',
+  'nascent',
+  'reticent',
+  'sublime',
+  'tenuous',
+  'vestige',
+  'resonant',
+  'lambent',
+  'numinous',
+  'oblivion',
+  'pellucid',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,41 +229,6 @@ function pickTerms(seed: number): Term[] {
 // Public API
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** fetch a quote from the remote API */
-async function fetchQuote(): Promise<{ quote: string; author: string }> {
-  const endpoints = [
-    'https://quoteslate.vercel.app/api/quotes/random?minLength=50&maxLength=150',
-    'https://zenquotes.io/api/random',
-  ];
-
-  for (const url of endpoints) {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    try {
-      const controller = new AbortController();
-      timeout = setTimeout(() => controller.abort(), 7000);
-      const res = await fetch(url, { signal: controller.signal });
-      if (!res.ok) continue;
-      const json = await res.json();
-      const fromQuoteSlate =
-        json && typeof json.quote === 'string' && typeof json.author === 'string'
-          ? { quote: json.quote, author: json.author }
-          : null;
-      const fromZenQuotes =
-        Array.isArray(json) && json[0] && typeof json[0].q === 'string'
-          ? { quote: json[0].q, author: typeof json[0].a === 'string' ? json[0].a : '' }
-          : null;
-      const parsed = fromQuoteSlate ?? fromZenQuotes;
-      if (parsed && parsed.quote.trim()) return parsed;
-    } catch {} finally {
-      if (timeout) clearTimeout(timeout);
-    }
-  }
-
-  // fallback to a random entry from the static list if network fails
-  const fallback = creativeWords[Math.floor(Math.random() * creativeWords.length)];
-  return { quote: fallback, author: '' };
-}
-
 /** Returns today's prompt. */
 import { getCuratedSelection } from './curation';
 import { localDateString, todayLocalDate } from './dates';
@@ -261,22 +250,15 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
   try {
     const curated = await getCuratedSelection(date);
 
-    // Build terms from curated selection
+    // Build terms from curated selection (devices + vocab word)
     const terms: Term[] = [
       ...curated.devices.map(d => ({ id: d, label: d })),
       { id: curated.vocabWord, label: curated.vocabWord },
     ];
 
-    // Try to fetch a fresh quote, fall back to curated prompt text
-    let text = curated.prompt.text;
-    let author = curated.prompt.author;
-    try {
-      const fetched = await fetchQuote();
-      if (fetched.quote) {
-        text = fetched.quote;
-        author = fetched.author;
-      }
-    } catch {}
+    // Use the curated quote directly — no external API call
+    const text = curated.prompt.text;
+    const author = curated.prompt.author;
 
     const prompt: Prompt = { text, terms, author };
     if (typeof localStorage !== 'undefined') {
@@ -286,11 +268,12 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
     }
     return prompt;
   } catch {
-    // Fallback to original seeded logic
+    // Fallback to seeded logic if curation fails
     const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
     const terms = pickTerms(seed);
-    const { quote, author } = await fetchQuote();
-    const prompt: Prompt = { text: quote, terms, author };
+    // Use a local creative prompt instead of the network
+    const text = creativeWords[Math.abs(seed) % creativeWords.length];
+    const prompt: Prompt = { text, terms, author: '' };
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem(key, JSON.stringify({ date: todayLocalDate(), prompt }));
@@ -304,8 +287,8 @@ export async function getDailyPrompt(date: Date): Promise<Prompt> {
 export async function getRandomPrompt(): Promise<Prompt> {
   const seed = Math.floor(Math.random() * 100_000);
   const terms = pickTerms(seed);
-  const { quote, author } = await fetchQuote();
-  return { text: quote, terms, author };
+  const text = creativeWords[Math.abs(seed) % creativeWords.length];
+  return { text, terms, author: '' };
 }
 
 /** All quote prompts — used for the preview frames. */
@@ -421,6 +404,39 @@ export const rhetoricalExamples: Record<string, string[]> = {
   allusion: [
     'He was a real Romeo with the ladies.',
     'Don\'t act like a Scrooge.',
+  ],
+  // Expanded devices
+  imagery: [
+    'The old house smelled of cedar and moth-balls and spent summers.',
+    'Her hands, cracked and cold, moved like winter branches in the wind.',
+  ],
+  rhetoricalQuestion: [
+    'If not now, when?',
+    'Does justice sleep while the world burns?',
+  ],
+  repetition: [
+    'We must love one another. We must.',
+    'Tomorrow, and tomorrow, and tomorrow — still we hope.',
+  ],
+  symbolism: [
+    'The white dove landed on the battlefield, and the soldiers stopped firing.',
+    'She planted a seed in the ruins of the old house.',
+  ],
+  foreshadowing: [
+    'Little did she know that the door she had just locked would never open again.',
+    'The sky that morning was the color of rust.',
+  ],
+  anadiplosis: [
+    'Fear leads to anger. Anger leads to hate. Hate leads to suffering.',
+    'Words lead to deeds; deeds shape habits; habits form character.',
+  ],
+  zeugma: [
+    'She lost her keys and her patience in the same afternoon.',
+    'He caught a cold and the last train home.',
+  ],
+  epiphora: [
+    'Government of the people, by the people, for the people.',
+    'And I knew it was lost, and I knew it was gone, and I knew it was mine.',
   ],
 };
 
@@ -554,6 +570,47 @@ export const rhetoricalLiteraryExamples: Record<string, { passage: string; autho
     author: 'Herman Melville, Moby-Dick',
     note: 'The biblical name signals exile and wandering before the story even begins.',
   },
+  // Expanded literary examples
+  imagery: {
+    passage: 'The fog comes on little cat feet.',
+    author: 'Carl Sandburg, "Fog"',
+    note: 'The silent arrival of fog is made physical through the image of a prowling cat.',
+  },
+  rhetoricalQuestion: {
+    passage: 'If you prick us, do we not bleed? If you tickle us, do we not laugh?',
+    author: 'William Shakespeare, The Merchant of Venice',
+    note: 'Shylock\'s questions demand a human answer — they argue by refusing to argue.',
+  },
+  repetition: {
+    passage: 'Tomorrow, and tomorrow, and tomorrow, creeps in this petty pace from day to day.',
+    author: 'William Shakespeare, Macbeth',
+    note: 'The triple repetition of "tomorrow" makes time feel endless and crushing.',
+  },
+  symbolism: {
+    passage: 'The green light at the end of Daisy\'s dock beckoned him.',
+    author: 'F. Scott Fitzgerald, The Great Gatsby',
+    note: 'The green light condenses Gatsby\'s entire dream into a single, visible point.',
+  },
+  foreshadowing: {
+    passage: 'It was a bright cold day in April, and the clocks were striking thirteen.',
+    author: 'George Orwell, Nineteen Eighty-Four',
+    note: 'The impossible thirteen signals immediately that the normal world no longer applies.',
+  },
+  anadiplosis: {
+    passage: 'Fear leads to anger; anger leads to hate; hate leads to suffering.',
+    author: 'Yoda, Star Wars (George Lucas)',
+    note: 'Each clause hands its final word to the next, creating a chain of consequence.',
+  },
+  zeugma: {
+    passage: 'She broke his car and, afterward, his heart.',
+    author: 'Traditional example',
+    note: 'One verb governs two objects in entirely different senses, creating dark comedy.',
+  },
+  epiphora: {
+    passage: 'Government of the people, by the people, for the people.',
+    author: 'Abraham Lincoln, Gettysburg Address',
+    note: 'The hammered repetition of "people" builds the democratic argument through sound alone.',
+  },
 };
 
 /**
@@ -588,4 +645,28 @@ export const rhetoricalDefinitions: Record<string, string> = {
   paradox: 'A statement that contradicts itself but may nonetheless be true.',
   allegory: 'A story, poem, or picture that can be interpreted to reveal a hidden meaning.',
   allusion: 'An indirect or passing reference to something.',
+  // Expanded definitions
+  imagery: 'The use of vivid, descriptive language that appeals to the senses.',
+  rhetoricalQuestion: 'A question asked for effect or to make a point, not to get an answer.',
+  repetition: 'The deliberate use of the same word or phrase more than once for emphasis.',
+  symbolism: 'The use of one thing to represent or stand for something else, often abstract.',
+  foreshadowing: 'A hint or warning of what is to come later in the narrative.',
+  anadiplosis: 'The repetition of the last word of one clause at the beginning of the next.',
+  zeugma: 'A figure of speech in which a word applies to two others in different ways.',
+  epiphora: 'The repetition of the same word or phrase at the end of successive clauses.',
+  // Expanded vocabulary words — included here so they display offline
+  wistful: 'Having a feeling of vague, melancholy longing for something past or beyond reach.',
+  zenith: 'The highest point reached by a celestial body; the peak of success or achievement.',
+  palpable: 'So intense as to seem almost tangible; able to be felt or sensed strongly.',
+  lucid: 'Expressed clearly and easily understood; mentally clear and perceptive.',
+  nascent: 'Just coming into existence; beginning to develop.',
+  reticent: 'Not revealing one\'s thoughts or feelings readily; reserved.',
+  sublime: 'Of such great beauty or excellence as to inspire awe; inspiring reverence.',
+  tenuous: 'Very weak or slight; lacking substance or solidity.',
+  vestige: 'A trace, mark, or visible sign left by something lost or vanished.',
+  resonant: 'Evoking a deep emotional or imaginative response; lasting in effect.',
+  lambent: 'Glowing softly and brightly; playing lightly over a surface.',
+  numinous: 'Having a strong spiritual or mysterious quality; evoking a sense of the divine.',
+  oblivion: 'The state of being unaware or forgotten; utter disregard.',
+  pellucid: 'Translucently clear; easily understood.',
 };

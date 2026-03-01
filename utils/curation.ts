@@ -9,6 +9,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { EXPANDED_DEVICE_META, getCuratedPrompt } from './curatedPrompts';
 import pb from './pocketbase';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,72 +259,57 @@ export async function getCuratedSelection(date: Date): Promise<{
   const sessionCount = await getSessionCount();
   const queue = await getDeviceQueue();
   const today = date.toISOString().split('T')[0];
-  const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
-  
+
+  // Use the new curated prompt system for quote + initial device candidates
+  const seenDeviceIds = new Set(
+    Object.keys(queue).filter(id => queue[id]?.rating !== 'unseen'),
+  );
+  const curatedResult = getCuratedPrompt(date, sessionCount, seenDeviceIds);
+
   const availableDifficulties = getAvailableDifficulties(sessionCount);
-  
-  // Select prompt based on seed, rotating emotional registers
-  const registers: EmotionalRegister[] = ['reflective', 'urgent', 'melancholic', 'celebratory', 'intellectual', 'provocative'];
-  const todayRegister = registers[seed % registers.length];
-  
-  // Find prompts matching today's register, with fallback
-  let matchingPrompts = promptMetadata.filter(p => p.emotionalRegister === todayRegister);
-  if (matchingPrompts.length === 0) matchingPrompts = promptMetadata;
-  const prompt = matchingPrompts[seed % matchingPrompts.length];
-  
-  // Select devices
-  const allDevices = Object.keys(deviceMetadata);
-  const availableDevices = allDevices.filter(d => 
-    availableDifficulties.includes(deviceMetadata[d].difficulty)
+  const seed = Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
+
+  // Build candidate device pool from the expanded metadata
+  const allDevices = Object.keys(EXPANDED_DEVICE_META);
+  const availableDevices = allDevices.filter(d =>
+    availableDifficulties.includes(EXPANDED_DEVICE_META[d].difficulty),
   );
-  
-  const selected: string[] = [];
+
+  const selected: string[] = [...curatedResult.devices];
   let isNewDevice = false;
-  
-  // 1. One device with emotional affinity to prompt register
-  const affinityDevices = availableDevices.filter(d =>
-    deviceMetadata[d].emotionalAffinity.includes(prompt.emotionalRegister) &&
-    !selected.includes(d)
-  );
-  if (affinityDevices.length > 0) {
-    selected.push(affinityDevices[seed % affinityDevices.length]);
-  }
-  
-  // 2. One "developing" device (due for spaced repetition)
+
+  // Override second slot with a "developing" device if one is due
   const dueDevices = availableDevices.filter(d => {
     const entry = queue[d];
     return entry && entry.rating === 'forced' && entry.nextDue <= today && !selected.includes(d);
   });
   if (dueDevices.length > 0) {
-    selected.push(dueDevices[seed % dueDevices.length]);
+    // Replace the second device with the due one
+    selected[1] = dueDevices[seed % dueDevices.length];
   }
-  
-  // 3. One new/stretch device
-  if (selected.length < 2) {
-    const unseenDevices = availableDevices.filter(d => 
-      !queue[d] && !selected.includes(d)
-    );
-    if (unseenDevices.length > 0) {
-      selected.push(unseenDevices[seed % unseenDevices.length]);
-      isNewDevice = true;
-    }
-  }
-  
-  // Fill remaining slots from available devices
+
+  // Mark as new device if any selected device has never been seen
+  isNewDevice = selected.some(d => !queue[d]);
+
+  // Ensure exactly 2 devices
   while (selected.length < 2) {
     const remaining = availableDevices.filter(d => !selected.includes(d));
     if (remaining.length === 0) break;
     selected.push(remaining[(seed + selected.length) % remaining.length]);
   }
-  
-  // Select vocabulary word with semantic resonance
-  const allVocab = Object.keys(vocabMetadata);
-  const availableVocab = allVocab.filter(v => 
-    availableDifficulties.includes(vocabMetadata[v].difficulty)
-  );
-  const vocabWord = availableVocab.length > 0
-    ? availableVocab[(seed + 7) % availableVocab.length]
-    : allVocab[seed % allVocab.length];
-  
-  return { prompt, devices: selected, vocabWord, isNewDevice };
+
+  // Build PromptMeta-compatible object from the curated quote
+  const prompt: PromptMeta = {
+    text: curatedResult.quote.quote,
+    author: curatedResult.quote.author,
+    emotionalRegister: 'reflective',
+    cognitiveDemand: 'medium',
+  };
+
+  return {
+    prompt,
+    devices: selected.slice(0, 2),
+    vocabWord: curatedResult.vocabWord,
+    isNewDevice,
+  };
 }

@@ -342,11 +342,18 @@ export default function HistoryModal({
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   const allTechniques = useMemo(() => {
-    const techSet = new Set<string>();
+    // Order by most recently used (sessions are sorted newest-first)
+    const seen = new Set<string>();
+    const ordered: string[] = [];
     sessions.forEach(s => {
-      s.terms?.forEach(t => techSet.add(t.label));
+      s.terms?.forEach(t => {
+        if (!seen.has(t.label)) {
+          seen.add(t.label);
+          ordered.push(t.label);
+        }
+      });
     });
-    return Array.from(techSet).sort();
+    return ordered;
   }, [sessions]);
 
   useEffect(() => {
