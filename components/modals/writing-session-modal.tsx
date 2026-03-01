@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '../../constants/theme';
 import { recognizeHandwriting } from '../../utils/ocr';
 import { Prompt, Term } from '../../utils/prompts';
+import NativeCameraOcr from '../NativeCameraOcr';
 import DictionaryModal from './dictionary-modal';
 import QuoteModal from './quote-modal';
 import TermDetailModal from './term-detail-modal';
@@ -95,6 +96,7 @@ type Props = {
   onClose: () => void;
   // scanImage will be provided if the user snapped a photo during the session
   onComplete: (writing: string, wordCount: number, scanImage?: string) => void;
+  sessionDurationMinutes?: number;
 };
 
 export default function WritingSessionModal({
@@ -102,9 +104,11 @@ export default function WritingSessionModal({
   prompt,
   onClose,
   onComplete,
+  sessionDurationMinutes,
 }: Props) {
+  const sessionSeconds = (sessionDurationMinutes ?? 10) * 60;
   const [text, setText] = useState('');
-  const [seconds, setSeconds] = useState(SESSION_SECONDS);
+  const [seconds, setSeconds] = useState(sessionSeconds);
   const [timerActive, setTimerActive] = useState(false);
   const [finished, setFinished] = useState(false);
   const [showDict, setShowDict] = useState(false);
@@ -121,6 +125,7 @@ export default function WritingSessionModal({
   });
   const [scanning, setScanning] = useState(false);
   const [scanImage, setScanImage] = useState<string | undefined>(undefined);
+  const [showNativeCamera, setShowNativeCamera] = useState(false);
   const [editorScrollY, setEditorScrollY] = useState(0);
 
   const editorRef = useRef<TextInput | null>(null);
@@ -158,7 +163,7 @@ export default function WritingSessionModal({
   useEffect(() => {
     if (visible) {
       setText('');
-      setSeconds(SESSION_SECONDS);
+      setSeconds(sessionSeconds);
       setTimerActive(false);
       setFinished(false);
       setScanImage(undefined);
@@ -166,7 +171,7 @@ export default function WritingSessionModal({
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
-  }, [visible]);
+  }, [visible, sessionSeconds]);
 
   const handleStart = () => {
     setTimerActive(true);
@@ -236,30 +241,33 @@ export default function WritingSessionModal({
     setInfoModal({ visible: true, title, message });
   }, []);
 
-  const launchScan = async (source: 'camera' | 'library') => {
-    if (source === 'camera' && Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        showInfo('Permission needed', 'Allow camera access to scan handwriting.');
-        return;
-      }
+  // Called when the native camera OCR scanner recognizes text
+  const handleNativeCameraText = useCallback((recognizedText: string) => {
+    if (recognizedText.trim()) {
+      insertTextIntoEditor(recognizedText.trim());
+    } else {
+      showInfo('No text found', 'Could not read text from the camera. Try again with clearer handwriting and good lighting.');
     }
+  }, [insertTextIntoEditor, showInfo]);
+
+  const launchScan = async (source: 'camera' | 'library') => {
+    // On native, "Take Photo" opens the NativeCameraOcr real-time scanner
+    // (handled via @bear-block/vision-camera-ocr frame processor).
+    // The library picker path below handles "Choose from Library" and web file picker.
+    if (source === 'camera' && Platform.OS !== 'web') {
+      setShowNativeCamera(true);
+      return;
+    }
+
     setScanning(true);
     try {
       const opts = { mediaTypes: ['images'] as any, quality: 0.85, base64: true };
-      const result =
-        source === 'camera' && Platform.OS !== 'web'
-          ? await ImagePicker.launchCameraAsync(opts)
-          : await ImagePicker.launchImageLibraryAsync(opts);
+      const result = await ImagePicker.launchImageLibraryAsync(opts);
 
       if (result.canceled) return;
 
       const asset = result.assets?.[0];
       if (!asset) return;
-      // if the user took a photo directly we can store its uri
-      if (source === 'camera' && asset.uri) {
-        setScanImage(asset.uri);
-      }
       const imageUri = (asset.uri ?? '') as string;
       const b64 = (asset.base64 ?? '') as string;
 
@@ -301,7 +309,7 @@ export default function WritingSessionModal({
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                {!timerActive && !finished && seconds === SESSION_SECONDS && (
+                {!timerActive && !finished && seconds === sessionSeconds && (
                   <TouchableOpacity style={styles.startBtn} onPress={handleStart}>
                     <Text style={styles.startBtnText}>Start</Text>
                   </TouchableOpacity>
@@ -391,7 +399,8 @@ export default function WritingSessionModal({
                 onScroll={handleEditorScroll}
                 scrollEventThrottle={16}
                 editable={timerActive}
-                placeholder={!timerActive ? 'Tap Start to begin your session...' : ''}
+                placeholder={!timerActive ? 'Begin writing here...' : ''}
+                placeholderTextColor="#C4B5A4"
                 textAlignVertical="top"
               />
 
@@ -401,13 +410,7 @@ export default function WritingSessionModal({
                   style={styles.editorOverlay}
                   activeOpacity={1}
                   onPress={handleStart}
-                >
-                  {seconds === SESSION_SECONDS && (
-                    <View style={styles.overlayCallout}>
-                      <Text style={styles.overlayText}>Tap Start to begin your session</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                />
               )}
             </View>
           </KeyboardAvoidingView>
@@ -510,6 +513,11 @@ export default function WritingSessionModal({
           )}
         </SafeAreaView>
       </Modal>
+      <NativeCameraOcr
+        visible={showNativeCamera}
+        onClose={() => setShowNativeCamera(false)}
+        onTextRecognized={handleNativeCameraText}
+      />
     </>
   );
 }

@@ -46,6 +46,26 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function parseVocabRatings(vocab?: string): Array<{ term: string; rating: string }> {
+  if (!vocab) return [];
+  try {
+    const parsed = JSON.parse(vocab) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object') return [];
+    return Object.entries(parsed)
+      .filter(([term, rating]) => term.trim().length > 0 && typeof rating === 'string')
+      .map(([term, rating]) => ({ term, rating: rating as string }));
+  } catch {
+    return [];
+  }
+}
+
+function getVocabRatingStatus(rating: string): 'natural' | 'developing' | 'untouched' {
+  const normalized = rating.trim().toLowerCase();
+  if (normalized === 'natural') return 'natural';
+  if (normalized === 'forced' || normalized === 'developing') return 'developing';
+  return 'untouched';
+}
+
 /** Flatten a sorted (newest-first) session list into FlatItems with day-grouping metadata */
 function flatten(sessions: Session[]): FlatItem[] {
   if (sessions.length === 0) return [];
@@ -195,6 +215,54 @@ function DetailSection({ label, value }: { label: string; value?: string }) {
   );
 }
 
+function VocabularySection({ vocab }: { vocab?: string }) {
+  const ratings = parseVocabRatings(vocab);
+  if (ratings.length === 0) return null;
+
+  return (
+    <View style={styles.detailSection}>
+      <Text style={styles.detailLabel}>VOCABULARY</Text>
+      <View style={styles.detailChips}>
+        {ratings.map(({ term, rating }) => (
+          (() => {
+            const status = getVocabRatingStatus(rating);
+            return (
+              <View
+                key={term}
+                style={[
+                  styles.chip,
+                  status === 'natural' && styles.vocabChipNatural,
+                  status === 'developing' && styles.vocabChipDeveloping,
+                  status === 'untouched' && styles.vocabChipUntouched,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    status === 'natural' && styles.vocabChipTextNatural,
+                    status === 'developing' && styles.vocabChipTextDeveloping,
+                  ]}
+                >
+                  {term}
+                </Text>
+                <Text
+                  style={[
+                    styles.vocabRatingText,
+                    status === 'natural' && styles.vocabChipTextNatural,
+                    status === 'developing' && styles.vocabChipTextDeveloping,
+                  ]}
+                >
+                  {' '}· {rating}
+                </Text>
+              </View>
+            );
+          })()
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // 
 // Session Detail Screen
 // 
@@ -242,7 +310,7 @@ function SessionDetail({ session, onBack }: { session: Session; onBack: () => vo
         <View style={styles.detailDivider} />
 
         <DetailSection label="WRITING" value={session.writing} />
-        <DetailSection label="VOCABULARY" value={session.vocab} />
+        <VocabularySection vocab={session.vocab} />
         <DetailSection label="LITERARY DEVICES" value={session.devices} />
         <DetailSection label="WHAT WENT WELL" value={session.good} />
         <DetailSection label="WHAT COULD IMPROVE" value={session.bad} />
@@ -271,6 +339,15 @@ export default function HistoryModal({
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Session | null>(null);
   const [shareSession, setShareSession] = useState<Session | null>(null);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  const allTechniques = useMemo(() => {
+    const techSet = new Set<string>();
+    sessions.forEach(s => {
+      s.terms?.forEach(t => techSet.add(t.label));
+    });
+    return Array.from(techSet).sort();
+  }, [sessions]);
 
   useEffect(() => {
     if (visible) {
@@ -288,20 +365,34 @@ export default function HistoryModal({
     } else {
       setSelected(null);
       setSearch('');
+      setActiveFilters([]);
     }
   }, [visible]);
 
   const filtered = useMemo(() => {
+    let result = sessions;
+
+    // Apply text search
     const q = search.toLowerCase().trim();
-    if (!q) return sessions;
-    return sessions.filter(
-      (s) =>
-        (s.prompt?.toLowerCase().includes(q) ?? false) ||
-        stripHtml(s.writing).toLowerCase().includes(q) ||
-        s.date.includes(q) ||
-        (s.terms?.some((t) => t.label.toLowerCase().includes(q)) ?? false),
-    );
-  }, [search, sessions]);
+    if (q) {
+      result = result.filter(
+        (s) =>
+          (s.prompt?.toLowerCase().includes(q) ?? false) ||
+          stripHtml(s.writing).toLowerCase().includes(q) ||
+          s.date.includes(q) ||
+          (s.terms?.some((t) => t.label.toLowerCase().includes(q)) ?? false),
+      );
+    }
+
+    // Apply technique filters
+    if (activeFilters.length > 0) {
+      result = result.filter(s =>
+        s.terms?.some(t => activeFilters.includes(t.label)) ?? false
+      );
+    }
+
+    return result;
+  }, [search, sessions, activeFilters]);
 
   const flatItems = useMemo(() => flatten(filtered), [filtered]);
 
@@ -342,6 +433,51 @@ export default function HistoryModal({
                 clearButtonMode="while-editing"
               />
             </View>
+
+            {/* Technique filter chips */}
+            {allTechniques.length > 0 && (
+              <View style={styles.filterRow}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterChipsContent}
+                >
+                  {allTechniques.map((tech) => {
+                    const isActive = activeFilters.includes(tech);
+                    return (
+                      <TouchableOpacity
+                        key={tech}
+                        style={[
+                          styles.filterChip,
+                          isActive && styles.filterChipActive,
+                        ]}
+                        onPress={() => {
+                          setActiveFilters(prev =>
+                            isActive
+                              ? prev.filter(f => f !== tech)
+                              : [...prev, tech]
+                          );
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.filterChipText,
+                          isActive && styles.filterChipTextActive,
+                        ]}>{tech}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {activeFilters.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearFiltersBtn}
+                      onPress={() => setActiveFilters([])}
+                    >
+                      <Text style={styles.clearFiltersText}>Clear filters</Text>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+              </View>
+            )}
 
             {/* Column headers */}
             {!loading && flatItems.length > 0 && (
@@ -467,6 +603,46 @@ const styles = StyleSheet.create({
     fontFamily: Font.serif,
     fontSize: 15,
     color: Colors.textPrimary,
+  },
+
+  // Filter chips
+  filterRow: {
+    paddingLeft: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  filterChipsContent: {
+    gap: 6,
+    paddingRight: Spacing.lg,
+    alignItems: 'center',
+  },
+  filterChip: {
+    backgroundColor: Colors.cardBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  filterChipText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textPrimary,
+  },
+  filterChipTextActive: {
+    color: Colors.textOnAccent,
+  },
+  clearFiltersBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  clearFiltersText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.accent,
   },
 
   // Column headers
@@ -744,5 +920,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     lineHeight: 27,
+  },
+  vocabRatingText: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  vocabChipNatural: {
+    backgroundColor: '#e8f5e1',
+    borderColor: '#b8d4a8',
+  },
+  vocabChipDeveloping: {
+    backgroundColor: '#fdf3e3',
+    borderColor: '#e4c98a',
+  },
+  vocabChipUntouched: {
+    backgroundColor: Colors.bg,
+    borderColor: Colors.border,
+  },
+  vocabChipTextNatural: {
+    color: '#4a7c3f',
+  },
+  vocabChipTextDeveloping: {
+    color: '#a0762a',
   },
 });

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
 import { fetchOnlineDefinition, normalizeTermKey, OnlineEntry } from '../../utils/dictionary';
-import { rhetoricalDefinitions, rhetoricalExamples } from '../../utils/prompts';
+import { rhetoricalDefinitions, rhetoricalExamples, rhetoricalLiteraryExamples } from '../../utils/prompts';
 
 type Props = {
   term: string | null;
@@ -137,6 +137,20 @@ export default function TermDetailModal({ term, visible, onClose }: Props) {
                         </View>
                       ))}
                     </>
+                  )}
+                  {rhetoricalLiteraryExamples[normalizedTerm] && (
+                    <View style={styles.literaryExampleBlock}>
+                      <Text style={styles.literaryPassage}>
+                        {rhetoricalLiteraryExamples[normalizedTerm].passage}
+                      </Text>
+                      <Text style={styles.literaryAuthor}>
+                        — {rhetoricalLiteraryExamples[normalizedTerm].author}
+                      </Text>
+                      <View style={styles.literaryNoteRule} />
+                      <Text style={styles.literaryNote}>
+                        {rhetoricalLiteraryExamples[normalizedTerm].note}
+                      </Text>
+                    </View>
                   )}
                 </ScrollView>
               );
@@ -381,5 +395,42 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     padding: Spacing.lg,
     textAlign: 'center',
+  },
+
+  //  Literary examples
+  literaryExampleBlock: {
+    backgroundColor: '#faf5ef',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.accent,
+    borderRadius: Radius.sm,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  literaryPassage: {
+    fontFamily: Font.serifItalic,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 24,
+    fontStyle: 'italic',
+  },
+  literaryAuthor: {
+    fontFamily: Font.serif,
+    fontSize: 12,
+    color: Colors.accent,
+    marginTop: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  literaryNoteRule: {
+    height: 1,
+    backgroundColor: Colors.divider,
+    marginVertical: Spacing.sm,
+  },
+  literaryNote: {
+    fontFamily: Font.serif,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
 });

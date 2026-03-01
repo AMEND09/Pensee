@@ -53,8 +53,8 @@ if (fs.existsSync(landingPage)) {
   console.warn('prepare-web: root index.html not found, landing page missing');
 }
 
-// copy standalone legal HTML pages to dist root so they're served at /privacy and /terms
-['privacy.html', 'terms.html'].forEach((name) => {
+// copy standalone HTML pages to dist root so they're served at /privacy, /terms, and /styleguide
+['privacy.html', 'terms.html', 'styleguide.html'].forEach((name) => {
   const src = path.join(root, name);
   if (fs.existsSync(src)) {
     fs.copyFileSync(src, path.join(dist, name.replace('.html', '') + '.html'));

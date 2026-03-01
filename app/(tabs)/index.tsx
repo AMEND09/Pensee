@@ -1,10 +1,12 @@
 ﻿
-import { Flame, History, Share2, User as UserIcon } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Flame, History, Settings as SettingsIcon, Share2 } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Animated,
     Easing,
+    Modal,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -17,21 +19,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AccountModal from '../../components/modals/account-modal';
 import ExportModal, { CardTemplate } from '../../components/modals/export-modal';
 import HistoryModal from '../../components/modals/history-modal';
+import OnboardingModal from '../../components/modals/onboarding-modal';
 import QuoteModal from '../../components/modals/quote-modal';
 import ReflectionModal from '../../components/modals/reflection-modal';
 import StatsModal from '../../components/modals/stats-modal';
 import TermDetailModal from '../../components/modals/term-detail-modal';
 import WritingSessionModal from '../../components/modals/writing-session-modal';
 import { Colors, Font, Radius, Spacing } from '../../constants/theme';
+import { calculateCTTR, calculateReadability, calculateSentenceVariety, getCTTRLabel, getWeeklySessionCount, getWeeklySessionDays } from '../../utils/analytics';
 import { useAuth } from '../../utils/auth';
+import { getCuratedSelection } from '../../utils/curation';
+import pb from '../../utils/pocketbase';
 import { allTermLabels, creativeWords, getDailyPrompt, getRandomPrompt, Prompt, rhetoricalDefinitions, Term } from '../../utils/prompts';
-import { getStats, Stats } from '../../utils/storage';
+import { getSettings } from '../../utils/settings';
+import { getSessions, getStats, Stats } from '../../utils/storage';
 
 // 
 // Constants
 // 
 
 const TERM_ROW_H = 32;   // height of a single frame in a technique-term reel (increased for larger chips)
+const MAX_EXCERPT_LENGTH = 120;
+const CELEBRATION_DURATION_MS = 2500;
 
 // 
 // Helpers
@@ -262,11 +271,32 @@ export default function HomeScreen() {
   const [showExport, setShowExport] = useState(false);
   const [exportInitialTemplate, setExportInitialTemplate] = useState<CardTemplate | undefined>(undefined);
   const [streak, setStreak] = useState(0);
-
+  const [pastExcerpt, setPastExcerpt] = useState<{text: string, date: string} | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showIntention, setShowIntention] = useState(false);
+  const [sessionIntention, setSessionIntention] = useState<string>('');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [newDevices, setNewDevices] = useState<Set<string>>(new Set());
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(10);
+  const [weeklyCount, setWeeklyCount] = useState(0);
+  const [weeklyDays, setWeeklyDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
+  const [weeklyGoal, setWeeklyGoal] = useState(5);
   // Writing session data
   const [sessionWriting, setSessionWriting] = useState('');
   const [sessionWordCount, setSessionWordCount] = useState(0);
   const [sessionImage, setSessionImage] = useState<string | undefined>(undefined);
+
+  // Load session duration from settings
+  const loadSessionDuration = useCallback(() => {
+    getSettings().then(s => {
+      setSessionDurationMinutes(s.sessionDurationMinutes);
+      setWeeklyGoal(s.weeklyGoalSessions);
+    });
+  }, []);
+
+  useEffect(() => {
+    loadSessionDuration();
+  }, [loadSessionDuration]);
 
   // Show initial prompt in reels once it's loaded from the API
   useEffect(() => {
@@ -277,7 +307,18 @@ export default function HomeScreen() {
     });
   }, [prompt]);
 
-  // load streak & stats when app starts and whenever stats modal opens
+  // Check which devices are new for badge display
+  useEffect(() => {
+    if (!prompt) return;
+    getCuratedSelection(new Date()).then(curated => {
+      if (curated.isNewDevice) {
+        const newSet = new Set<string>();
+        // The last device in the curated list is the new/stretch device
+        newSet.add(curated.devices[curated.devices.length - 1]);
+        setNewDevices(newSet);
+      }
+    }).catch(() => {});
+  }, [prompt]);
   const refreshStats = useCallback(async () => {
     setStatsLoading(true);
     try {
@@ -295,6 +336,57 @@ export default function HomeScreen() {
   useEffect(() => {
     if (showStats) refreshStats();
   }, [showStats, refreshStats]);
+
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      // Check local first
+      const local = await AsyncStorage.getItem('pensee_onboarding_complete');
+      if (local) return;
+
+      // Check PocketBase if authenticated
+      if (pb.authStore.isValid && pb.authStore.record?.id) {
+        try {
+          const record = await pb.collection('users').getOne(pb.authStore.record.id);
+          if (record['onboardingComplete']) {
+            await AsyncStorage.setItem('pensee_onboarding_complete', 'true');
+            return;
+          }
+        } catch {}
+      }
+
+      setShowOnboarding(true);
+    };
+    checkOnboarding();
+  }, []);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setShowOnboarding(false);
+    AsyncStorage.setItem('pensee_onboarding_complete', 'true');
+    // Sync to PocketBase
+    if (pb.authStore.isValid && pb.authStore.record?.id) {
+      pb.collection('users').update(pb.authStore.record.id, {
+        onboardingComplete: true,
+      }).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    getSessions().then(sessions => {
+      if (sessions.length > 0) {
+        const idx = Math.floor(Math.random() * sessions.length);
+        const s = sessions[idx];
+        const writing = s.writing.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (writing.length > 0) {
+          const excerpt = writing.length > MAX_EXCERPT_LENGTH ? writing.slice(0, MAX_EXCERPT_LENGTH) + '…' : writing;
+          setPastExcerpt({ text: excerpt, date: s.date });
+        }
+      }
+      const wc = getWeeklySessionCount(sessions);
+      const wd = getWeeklySessionDays(sessions);
+      setWeeklyCount(wc);
+      setWeeklyDays(wd);
+    });
+  }, []);
 
   const handleShuffle = useCallback(async () => {
     if (isSpinning || loadingPrompt || !prompt) return;
@@ -363,8 +455,27 @@ export default function HomeScreen() {
 
   const handleBeginSession = useCallback(() => {
     setSessionPrompt(prompt);
-    setShowSession(true);
+    setShowIntention(true);
   }, [prompt]);
+
+  const intentionOptions = [
+    'Use a device more naturally',
+    'Write without stopping',
+    'Try a different kind of opening',
+    'Follow wherever it leads',
+  ];
+
+  const handleIntentionSelected = useCallback((intention: string) => {
+    setSessionIntention(intention);
+    setShowIntention(false);
+    setTimeout(() => setShowSession(true), 300);
+  }, []);
+
+  const handleIntentionSkip = useCallback(() => {
+    setSessionIntention('');
+    setShowIntention(false);
+    setTimeout(() => setShowSession(true), 300);
+  }, []);
 
   // Width of the text area inside the quote card, used by the off-screen measuring node.
   // scrollContent paddingHorizontal + quoteTouchable paddingHorizontal on both sides.
@@ -441,10 +552,33 @@ export default function HomeScreen() {
       setSessionWordCount(wordCount);
       setSessionImage(scanImage);
       setShowSession(false);
-      setTimeout(() => setShowReflection(true), 350);
+      setShowCelebration(true);
     },
     [],
   );
+
+  const celebrationAffirmations = [
+    "That's a complete thought.",
+    "You wrote through it.",
+    "Something happened there.",
+    "The page is no longer blank.",
+    "You showed up today.",
+    "That counts.",
+    "Words on paper. That's the work.",
+  ];
+
+  const handleCelebrationDone = useCallback(() => {
+    setShowCelebration(false);
+    setTimeout(() => setShowReflection(true), 300);
+  }, []);
+
+  // Auto-dismiss celebration after 2.5 seconds
+  useEffect(() => {
+    if (showCelebration) {
+      const timer = setTimeout(handleCelebrationDone, CELEBRATION_DURATION_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration, handleCelebrationDone]);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -503,7 +637,7 @@ export default function HomeScreen() {
               onPress={() => setShowAccount(true)}
               activeOpacity={0.75}
             >
-              <UserIcon size={16} color={Colors.textSecondary} />
+              <SettingsIcon size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -512,14 +646,7 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>Quote Prompt</Text>
-            <TouchableOpacity
-              style={[styles.shuffleBtn, (isSpinning || loadingPrompt) && styles.shuffleBtnDisabled]}
-              onPress={handleShuffle}
-              activeOpacity={0.7}
-              disabled={isSpinning || loadingPrompt}
-            >
-              <Text style={styles.shuffleBtnText}>{isSpinning ? 'spinning' : '  shuffle'}</Text>
-            </TouchableOpacity>
+
           </View>
 
           <View style={styles.cardDivider} />
@@ -615,8 +742,8 @@ export default function HomeScreen() {
 
           <View style={styles.termRow}>
             {prompt?.terms?.map((term, i) => (
+              <View key={i} style={styles.termChipWrapper}>
               <TouchableOpacity
-                key={i}
                 style={styles.termChip}
                 onPress={() => !isSpinning && openTermDetail(term)}
                 activeOpacity={isSpinning ? 1 : 0.7}
@@ -638,8 +765,40 @@ export default function HomeScreen() {
                   reverse
                 />
               </TouchableOpacity>
+                {newDevices.has(term.id) && (
+                  <Text style={styles.newDeviceLabel}>New</Text>
+                )}
+              </View>
             ))}
           </View>
+        </View>
+
+        {/* Weekly Progress */}
+        <View style={styles.weeklyProgress}>
+          <View style={styles.weeklyHeader}>
+            <Text style={styles.weeklyLabel}>THIS WEEK</Text>
+            <Text style={styles.weeklyCount}>{weeklyCount}/{weeklyGoal}</Text>
+          </View>
+          <View style={styles.weeklyDots}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+              <View key={i} style={styles.weeklyDotCol}>
+                <View style={[styles.weeklyDot, weeklyDays[i] && styles.weeklyDotFilled]} />
+                <Text style={styles.weeklyDayLabel}>{day}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Emotional Primer */}
+        <View style={styles.primerSection}>
+          {pastExcerpt ? (
+            <>
+              <Text style={styles.primerText}>"{pastExcerpt.text}"</Text>
+              <Text style={styles.primerDate}>{pastExcerpt.date}</Text>
+            </>
+          ) : (
+            <Text style={styles.primerPlaceholder}>Your writing will live here.</Text>
+          )}
         </View>
 
         {/*  Encouragement  */}
@@ -668,11 +827,18 @@ export default function HomeScreen() {
       </View>
 
       {/*  Modals  */}
+      <OnboardingModal
+        visible={showOnboarding}
+        terms={prompt?.terms ?? []}
+        onComplete={handleOnboardingComplete}
+      />
+
       <WritingSessionModal
         visible={showSession}
         prompt={sessionPrompt}
         onClose={() => setShowSession(false)}
         onComplete={handleSessionComplete}
+        sessionDurationMinutes={sessionDurationMinutes}
       />
 
       <ReflectionModal
@@ -684,7 +850,13 @@ export default function HomeScreen() {
         terms={sessionPrompt?.terms ?? prompt?.terms ?? []}
         image={sessionImage}
         onClose={() => setShowReflection(false)}
-        onSave={() => {}}
+        onSave={() => {
+          refreshStats();
+          getSessions().then(sessions => {
+            setWeeklyCount(getWeeklySessionCount(sessions));
+            setWeeklyDays(getWeeklySessionDays(sessions));
+          });
+        }}
         onExport={() => setShowExport(true)}
       />
 
@@ -715,6 +887,7 @@ export default function HomeScreen() {
       <AccountModal
         visible={showAccount}
         onClose={() => setShowAccount(false)}
+        onSettingsChanged={loadSessionDuration}
       />
 
       <ExportModal
@@ -728,6 +901,70 @@ export default function HomeScreen() {
         initialTemplate={exportInitialTemplate}
         hideTemplateSelector={!!exportInitialTemplate}
       />
+
+      {/* Session Intention Setter */}
+      <Modal visible={showIntention} transparent animationType="slide">
+        <View style={styles.intentionOverlay}>
+          <View style={styles.intentionSheet}>
+            <View style={styles.intentionHandle} />
+            <Text style={styles.intentionQuestion}>What do you want to try today?</Text>
+            <View style={styles.intentionGrid}>
+              {intentionOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.intentionChip}
+                  onPress={() => handleIntentionSelected(option)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.intentionChipText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity onPress={handleIntentionSkip} style={styles.intentionSkip}>
+              <Text style={styles.intentionSkipText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Celebratory Moment */}
+      <Modal visible={showCelebration} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.celebrationOverlay}
+          activeOpacity={1}
+          onPress={handleCelebrationDone}
+        >
+          <Text style={styles.celebrationCount}>{sessionWordCount}</Text>
+          <Text style={styles.celebrationLabel}>words</Text>
+          {sessionWriting && (() => {
+            const cttr = calculateCTTR(sessionWriting);
+            const { label: cttrLabel } = getCTTRLabel(cttr);
+            const readability = calculateReadability(sessionWriting);
+            const variety = calculateSentenceVariety(sessionWriting);
+            return (
+              <View style={styles.celebrationTTR}>
+                <Text style={styles.celebrationTTRScore}>{cttr.toFixed(1)}</Text>
+                <Text style={styles.celebrationTTRLabel}>vocabulary diversity · {cttrLabel}</Text>
+                {readability && (
+                  <View style={styles.celebrationMetricRow}>
+                    <Text style={styles.celebrationMetricValue}>{readability.fleschReadingEase}</Text>
+                    <Text style={styles.celebrationTTRLabel}>readability · {readability.gradeLabel}</Text>
+                  </View>
+                )}
+                {variety && (
+                  <View style={styles.celebrationMetricRow}>
+                    <Text style={styles.celebrationMetricValue}>{variety.lengthVariation}</Text>
+                    <Text style={styles.celebrationTTRLabel}>sentence variety · {variety.label}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+          <Text style={styles.celebrationAffirmation}>
+            {celebrationAffirmations[Math.floor(Math.random() * celebrationAffirmations.length)]}
+          </Text>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -923,6 +1160,17 @@ const styles = StyleSheet.create({
   termReelContainer: {
     minWidth: 28,
   },
+  newDeviceLabel: {
+    fontFamily: Font.serif,
+    fontSize: 9,
+    color: Colors.accent,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  termChipWrapper: {
+    alignItems: 'center',
+  },
 
   //  Encouragement
   encouragementRow: {
@@ -964,5 +1212,204 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+
+  //  Emotional Primer
+  primerSection: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+  },
+  primerText: {
+    fontFamily: Font.serifItalic,
+    fontSize: 14,
+    color: Colors.textMuted,
+    lineHeight: 22,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  primerDate: {
+    fontFamily: Font.serif,
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    opacity: 0.7,
+  },
+  primerPlaceholder: {
+    fontFamily: Font.serifItalic,
+    fontSize: 14,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    opacity: 0.6,
+  },
+
+  //  Weekly Progress
+  weeklyProgress: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+  },
+  weeklyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  weeklyLabel: {
+    fontFamily: Font.serif,
+    fontSize: 10,
+    letterSpacing: 1.3,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  weeklyCount: {
+    fontFamily: Font.serifBold,
+    fontSize: 14,
+    color: Colors.accent,
+  },
+  weeklyDots: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  weeklyDotCol: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  weeklyDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    backgroundColor: 'transparent',
+  },
+  weeklyDotFilled: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  weeklyDayLabel: {
+    fontFamily: Font.serif,
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+
+  //  Celebration
+  celebrationOverlay: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  celebrationCount: {
+    fontFamily: Font.serifBold,
+    fontSize: 72,
+    color: Colors.accent,
+    letterSpacing: 2,
+  },
+  celebrationLabel: {
+    fontFamily: Font.serif,
+    fontSize: 18,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    letterSpacing: 1,
+  },
+  celebrationAffirmation: {
+    fontFamily: Font.serifItalic,
+    fontSize: 18,
+    color: Colors.textPrimary,
+    marginTop: Spacing.xl,
+    textAlign: 'center',
+    lineHeight: 28,
+    fontStyle: 'italic',
+  },
+  celebrationTTR: {
+    marginTop: Spacing.lg,
+    alignItems: 'center',
+  },
+  celebrationTTRScore: {
+    fontFamily: Font.serifBold,
+    fontSize: 28,
+    color: Colors.textPrimary,
+  },
+  celebrationTTRLabel: {
+    fontFamily: Font.serif,
+    fontSize: 13,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  celebrationMetricRow: {
+    marginTop: Spacing.md,
+    alignItems: 'center',
+  },
+  celebrationMetricValue: {
+    fontFamily: Font.serifBold,
+    fontSize: 22,
+    color: Colors.textPrimary,
+  },
+
+  //  Intention Setter
+  intentionOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    justifyContent: 'flex-end',
+  },
+  intentionSheet: {
+    backgroundColor: Colors.cardBg,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xxl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderBottomWidth: 0,
+  },
+  intentionHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: Spacing.lg,
+  },
+  intentionQuestion: {
+    fontFamily: Font.serifBold,
+    fontSize: 22,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    lineHeight: 30,
+  },
+  intentionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+  },
+  intentionChip: {
+    width: '47%',
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+  },
+  intentionChipText: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  intentionSkip: {
+    alignItems: 'center',
+    paddingTop: Spacing.lg,
+  },
+  intentionSkipText: {
+    fontFamily: Font.serif,
+    fontSize: 14,
+    color: Colors.textMuted,
   },
 });
