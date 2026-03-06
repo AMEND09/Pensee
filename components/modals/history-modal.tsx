@@ -46,17 +46,20 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-function parseVocabRatings(vocab?: string): Array<{ term: string; rating: string }> {
-  if (!vocab) return [];
-  try {
-    const parsed = JSON.parse(vocab) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== 'object') return [];
-    return Object.entries(parsed)
-      .filter(([term, rating]) => term.trim().length > 0 && typeof rating === 'string')
-      .map(([term, rating]) => ({ term, rating: rating as string }));
-  } catch {
-    return [];
+function parseVocabRatings(vocabRaw?: unknown): Array<{ term: string; rating: string }> {
+  if (!vocabRaw) return [];
+  let parsed: unknown = vocabRaw;
+  if (typeof vocabRaw === 'string') {
+    try {
+      parsed = JSON.parse(vocabRaw);
+    } catch {
+      return [];
+    }
   }
+  if (!parsed || typeof parsed !== 'object') return [];
+  return Object.entries(parsed as Record<string, unknown>)
+    .filter(([term, rating]) => term.trim().length > 0 && typeof rating === 'string')
+    .map(([term, rating]) => ({ term, rating: rating as string }));
 }
 
 function getVocabRatingStatus(rating: string): 'natural' | 'developing' | 'untouched' {

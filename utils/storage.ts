@@ -50,7 +50,11 @@ function pbRecordToSession(record: Record<string, any>): Session {
     date: normalizeDateString(record['date'] as string),
     wordCount: (record['wordCount'] as number) ?? 0,
     writing: (record['writing'] as string) ?? '',
-    vocab: (record['vocab'] as string) ?? '',
+    vocab: (() => {
+      const v = record['vocab'];
+      if (!v) return '';
+      return typeof v === 'string' ? v : JSON.stringify(v);
+    })(),
     devices: (record['devices'] as string) ?? '',
     good: (record['good'] as string) ?? '',
     bad: (record['bad'] as string) ?? '',
@@ -60,7 +64,8 @@ function pbRecordToSession(record: Record<string, any>): Session {
     quoteAuthor: record['quoteAuthor'] as string | undefined,
     terms: (() => {
       if (!record['terms']) return undefined;
-      try { return JSON.parse(record['terms'] as string); } catch { return undefined; }
+      if (typeof record['terms'] !== 'string') return record['terms'];
+      try { return JSON.parse(record['terms']); } catch { return undefined; }
     })(),
   };
 }

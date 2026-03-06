@@ -33,11 +33,10 @@ export function localDateString(d: Date): string {
 export function normalizeDateString(raw?: string | null): string {
   if (!raw) return '';
 
-  // If the value is exactly a bare YYYY-MM-DD string (10 chars, no time/zone
-  // suffix) we treat it as the local calendar date the user intended.
   const trimmed = raw.trim();
-  if (trimmed.length === 10 && /^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return trimmed;
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    return match[1];
   }
 
   // Otherwise the value includes time and/or timezone information (e.g. a
